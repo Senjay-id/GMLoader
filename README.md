@@ -5,6 +5,9 @@ You will need to run the program once everytime you install/remove a mod that re
 
 # Credits
 [UTMT Team](https://github.com/krzys-h/UndertaleModTool) - All of this isn't possible without the UTMT tool and library
+
 [GMLML](https://github.com/BlurOne-GIT/GML-Mod-Loader) - For the ProofOfConcept Code
+
 Eldoofus - Helping my skill issues
+
 [Crusenho](https://crusenho.itch.io/) - Executable Icon
