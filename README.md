@@ -7,7 +7,7 @@ You will only need to run the program once everytime you install/remove a mod th
 * Supports Gamemaker's assembly recompiling by loading the asm files inside GameFolder/mods/code/asm/*.asm
 * Experimental Room Compiling by loading the exported room json files inside GameFolder/mods/rooms/*.json
 * Existing GameObjects Manipulation by loading configuration files inside GameFolder/mods/config/existing_object/*.json
-* Add and manipulate new GameObjects Manipulation by loading configuration files inside GameFolder/mods/config/new_object/*.json
+* Add and Manipulate new GameObjects by loading configuration files inside GameFolder/mods/config/new_object/*.json
 * Load your own custom CSharp Script files inside GameFolder/csx/*.csx
 
 # Yet to be added
