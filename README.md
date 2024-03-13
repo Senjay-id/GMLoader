@@ -5,9 +5,11 @@ You will only need to run the program once everytime you install/remove a mod th
 # Features
 * Adding or Replacing GML assets by loading the gml files inside GameFolder/mods/code/*.gml
 * Supports Gamemaker's assembly recompiling by loading the asm files inside GameFolder/mods/code/asm/*.asm
+* Append GML code by importing the gml files inside GameFolder/mods/code/appendgml/*.gml
 * Experimental Room Compiling by loading the exported room json files inside GameFolder/mods/rooms/*.json
 * Existing GameObjects Manipulation by loading configuration files inside GameFolder/mods/config/existing_object/*.json
 * Add and Manipulate new GameObjects by loading configuration files inside GameFolder/mods/config/new_object/*.json
+* Import shaders by loading exported shader files inside GameFolder/mods/shader/shd_myshaderfolder
 * Load your own custom CSharp Script files inside GameFolder/csx/*.csx
 
 # Yet to be added
