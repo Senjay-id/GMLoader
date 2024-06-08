@@ -15,6 +15,11 @@ You will only need to run the program once everytime you install/remove a mod th
 * Fixing Room compiling
 * Extension Injection script
 
+# Building
+* Clone the project
+* Compile [UndertalModLib](https://github.com/krzys-h/UndertaleModTool) and [xxHash](https://github.com/uranium62/xxHash) then put their dll inside the lib folder
+* Open the solution and build
+
 # Credits
 [UTMT Team](https://github.com/krzys-h/UndertaleModTool) - All of this isn't possible without the UTMT tool and library
 
