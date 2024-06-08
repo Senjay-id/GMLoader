@@ -78,6 +78,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="GMLoader.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="mods\csx\Builtin Scripts\h_ImportShader.csx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
