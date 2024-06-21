@@ -1,4 +1,5 @@
-GMLoader is a program that can load CSharp Script files and recompile non-YYC GM:Studio games. It will make a backup of your data files to ensure that you'll never corrupt your game data while recompiling. The builtin scripts currently allow you to add/replace GML/ASM/Room assets. It uses UndertaleMod library from UTMT and xxHash to hash the data.win. 
+GMLoader is a program that can load CSharp Script files and recompile non-YYC GM:Studio games using [UndertalModLib](https://github.com/krzys-h/UndertaleModTool). It will make a backup of your data files to ensure that you'll never corrupt your game data while recompiling. 
+
 
 You will only need to run the program once everytime you install/remove a mod that requires GMLoader. This will save your time in recompiling the game's data.
 
