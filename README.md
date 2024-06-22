@@ -13,8 +13,10 @@ You will only need to run the program once everytime you install/remove a mod th
 * Load your own custom CSharp Script files inside GameFolder/csx/*.csx
 
 # Yet to be added
-* Fixing Room compiling
-* Extension Injection script
+* Room compiling
+
+# Wiki
+TBA
 
 # Building
 * Clone the project
