@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -18,7 +18,7 @@
 		<!-- <BeautyExcludes>dll1.dll;lib*;...</BeautyExcludes> -->
 		<!-- dlls that end users never needed, so hide them -->
 		<!-- <BeautyHiddens>hostfxr;hostpolicy;*.deps.json;*.runtimeconfig*.json</BeautyHiddens> -->
-		<BeautyHiddens>hostfxr;hostpolicy;*.deps.json;*.runtimeconfig*.json</BeautyHiddens>
+		<BeautyHiddens></BeautyHiddens>
 		<!-- set to True if you want to disable -->
 		<DisableBeauty>False</DisableBeauty>
 		<!-- set to False if you want to beauty on build -->
@@ -81,22 +81,22 @@
     <None Update="GMLoader.ini">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="mods\csx\Builtin Scripts\h_ImportShader.csx">
+    <None Update="mods\csx\builtin\h_ImportShader.csx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="mods\csx\Builtin Scripts\h_NewObjectManipulation.csx">
+    <None Update="mods\csx\builtin\h_NewObjectManipulation.csx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="mods\csx\Builtin Scripts\ImportAGML.csx">
+    <None Update="mods\csx\builtin\ImportAGML.csx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="mods\csx\Builtin Scripts\ImportASM.csx">
+    <None Update="mods\csx\builtin\ImportASM.csx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="mods\csx\Builtin Scripts\j_AppendGML.csx">
+    <None Update="mods\csx\builtin\j_AppendGML.csx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="mods\csx\Builtin Scripts\j_ExistingObjectManipulation.csx">
+    <None Update="mods\csx\builtin\j_ExistingObjectManipulation.csx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

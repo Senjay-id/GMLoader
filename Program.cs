@@ -1,4 +1,4 @@
-#region Using Directives
+﻿#region Using Directives
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.Extensions.Configuration;
@@ -51,43 +51,50 @@ public class GMLoaderProgram
             string backupDataPath = configuration["universal:databackup"];
             string gameDataPath = configuration["universal:originaldata"];
 
+            string importPreCSXPath = configuration["universal:importprecsx"];
+            string compilePreCSXString = configuration["universal:compileprecsx"];
+
             string importBuiltInCSXPath = configuration["universal:importbuiltincsx"];
             string compileBuiltInCSXString = configuration["universal:compilebuiltincsx"];
 
-            string importCSXPath = configuration["universal:importcsx"];
-            string compileCSXString = configuration["universal:compilecsx"];
+            string importPostCSXPath = configuration["universal:importpostcsx"];
+            string compilePostCSXString = configuration["universal:compilepostcsx"];
 
             string supportedHashVersion = configuration["gamespecific:supportedhashversion"];
             string autoGameStartString = configuration["universal:autogamestart"];
             string gameExecutable = configuration["gamespecific:gameexecutable"];
 
-            bool compileBuiltInCSX = bool.Parse(compileCSXString);
-            bool compileCSX = bool.Parse(compileCSXString);
+            bool compilePreCSX = bool.Parse(compilePreCSXString);
+            bool compileBuiltInCSX = bool.Parse(compileBuiltInCSXString);
+            bool compilePostCSX = bool.Parse(compilePostCSXString);
 
             bool autoGameStart = bool.Parse(autoGameStartString);
             ulong currentHash = 0;
             #endregion
 
-            CreateDirectoryIfNotExists(importCSXPath);
+            CreateDirectoryIfNotExists(importPreCSXPath);
             CreateDirectoryIfNotExists(importBuiltInCSXPath);
-            string[] dirBuiltInCSXFiles = Directory.GetFiles(importBuiltInCSXPath, "*.csx");
-            string[] dirCSXFiles = Directory.GetFiles(importCSXPath, "*.csx");
+            CreateDirectoryIfNotExists(importPostCSXPath);
 
-            if (!compileBuiltInCSX && !compileCSX)
+            string[] dirPreCSXFiles = Directory.GetFiles(importPreCSXPath, "*.csx");
+            string[] dirBuiltInCSXFiles = Directory.GetFiles(importBuiltInCSXPath, "*.csx");
+            string[] dirPostCSXFiles = Directory.GetFiles(importPostCSXPath, "*.csx");
+
+            if (!compilePreCSX && !compileBuiltInCSX && !compilePostCSX)
             {
                 PrintMessage("What's the point of using GMLoader if you disable CSX COMPILING REEEEEEEEEEE \n\n\nPress any key to close...");
                 Console.ReadKey();
                 Environment.Exit(0);
             }
-            else if (dirBuiltInCSXFiles.Length == 0 && dirCSXFiles.Length == 0)
+            else if (dirBuiltInCSXFiles.Length == 0 && dirPreCSXFiles.Length == 0 && dirPostCSXFiles.Length == 0)
             {
-                PrintMessage($"The CSX Script folder path is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importCSXPath))}. \nAborting the process\n\n\nPress any key to close...");
+                PrintMessage($"The CSX Script folder path is empty.\nAborting the process\n\n\nPress any key to close...");
                 Console.ReadKey();
                 Environment.Exit(0);
             }
-            else if (!dirBuiltInCSXFiles.Any(x => x.EndsWith(".csx")) && !dirCSXFiles.Any(x => x.EndsWith(".csx")))
+            else if (!dirBuiltInCSXFiles.Any(x => x.EndsWith(".csx")) && !dirPreCSXFiles.Any(x => x.EndsWith(".csx")) && !dirPostCSXFiles.Any(x => x.EndsWith(".csx")))
             {
-                PrintMessage($"No CSX Script file found at {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importCSXPath))}. \nAborting the process\n\n\nPress any key to close...");
+                PrintMessage($"No CSX Script file found in the csx directory.\nAborting the process\n\n\nPress any key to close...");
                 Console.ReadKey();
                 Environment.Exit(0);
             }
@@ -127,14 +134,39 @@ public class GMLoaderProgram
             Console.ResetColor();
 
             //CSX Handling
-
             ScriptOptionsInitialize();
 
+            //Compile users script before builtin scripts
+            if (dirPreCSXFiles.Length != 0)
+            {
+                if (compilePreCSX)
+                {
+                    PrintMessage("\nLoading pre-CSX Scripts.");
+                    foreach (string file in dirPreCSXFiles)
+                    {
+                        RunCSharpFile(file);
+                    }
+                }
+                else
+                {
+                    PrintMessage("\nPre-Loading CSX script is disabled, skipping the process.");
+                }
+            }
+            else if (compilePreCSX)
+            {
+                PrintMessage($"\nThe pre-CSX folder is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPreCSXPath))} , skipping the process.");
+            }
+            else if (compilePreCSX && !dirPreCSXFiles.Any(x => x.EndsWith(".csx")))
+            {
+                PrintMessage($"\nNo pre-CSX script file found. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPreCSXPath))} , skipping the process.");
+            }
+
+            //Compile builtin scripts
             if (dirBuiltInCSXFiles.Length != 0)
             {
                 if (compileBuiltInCSX)
                 {
-                    PrintMessage("\nExecuting BuiltIn Scripts.");
+                    PrintMessage("\nLoading builtin-CSX scripts.");
                     foreach (string file in dirBuiltInCSXFiles)
                     {
                         RunCSharpFile(file);
@@ -142,42 +174,42 @@ public class GMLoaderProgram
                 }
                 else
                 {
-                    PrintMessage("Loading BuiltIn CSX Script is disabled, skipping the process.");
+                    PrintMessage("\nLoading builtin-CSX script is disabled, skipping the process.");
                 }
             }
             else if (compileBuiltInCSX)
             {
-                PrintMessage("The BuiltIn CSX folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importBuiltInCSXPath)) + "\nSkipping the process.");
+                PrintMessage($"\nThe builtin-CSX folder path is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importBuiltInCSXPath))} , skipping the process.");
             }
             else if (compileBuiltInCSX && !dirBuiltInCSXFiles.Any(x => x.EndsWith(".csx")))
             {
-                PrintMessage($"No CSX Script file found at {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importBuiltInCSXPath))}. \nSkipping the process.");
+                PrintMessage($"\nNo builtin-CSX script file found at {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importBuiltInCSXPath))} , skipping the process.");
             }
 
-            //Compile User's Script Files
+            //Compile users script after builtin scripts
 
-            if (dirCSXFiles.Length != 0)
+            if (dirPostCSXFiles.Length != 0)
             {
-                if (compileCSX)
+                if (compilePostCSX)
                 {
-                    PrintMessage("\nExecuting User's CSX Scripts.");
-                    foreach (string file in dirCSXFiles)
+                    PrintMessage("\nLoading post-CSX Scripts.");
+                    foreach (string file in dirPostCSXFiles)
                     {
                         RunCSharpFile(file);
                     }
                 }
                 else
                 {
-                    PrintMessage("Loading CSX script is disabled, skipping the process.");
+                    PrintMessage("\nLoading post-CSX script is disabled, skipping the process.");
                 }
             }
-            else if (compileCSX)
+            else if (compilePostCSX)
             {
-                PrintMessage("\nThe User's CSX folder is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importCSXPath)) + "\nSkipping the process.");
+                PrintMessage($"\nThe post-CSX folder is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPostCSXPath))} , skipping the process.");
             }
-            else if (compileCSX && !dirCSXFiles.Any(x => x.EndsWith(".csx")))
+            else if (compilePostCSX && !dirPostCSXFiles.Any(x => x.EndsWith(".csx")))
             {
-                PrintMessage($"No CSX Script file found at {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importCSXPath))}. \nSkipping the process.");
+                PrintMessage($"\nNo post-CSX script file found At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPostCSXPath))} , skipping the process.");
             }
 
             Console.ForegroundColor = ConsoleColor.DarkYellow;
@@ -191,7 +223,7 @@ public class GMLoaderProgram
                 Console.ForegroundColor = ConsoleColor.Cyan;
                 PrintMessage("\nGame Data has been recompiled, Launching the game...");
                 Process.Start(gameExecutable);
-                Thread.Sleep(10000);
+                Thread.Sleep(3000);
                 Environment.Exit(0);
             }
             else
