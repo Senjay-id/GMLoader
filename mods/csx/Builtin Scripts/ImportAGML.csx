@@ -533,6 +533,8 @@ IConfiguration configuration = new ConfigurationBuilder()
 
 string compileGMLString = configuration["universal:compilegml"];
 bool compileGML = bool.Parse(compileGMLString);
+bool hasGML = true;
+bool hasCollisionGML = true;
 
 string modDir = "./mods/code";
 CreateDirectoryIfNotExists(modDir);
@@ -546,18 +548,58 @@ if (!compileGML)
 else if (dirFiles.Length == 0)
 {
     PrintMessage("The GML import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, modDir)) + " , skipping the process");
-    return;
+    hasGML = false;
 }
 else if (!dirFiles.Any(x => x.EndsWith(".gml")))
 {
     PrintMessage("The GML import folder doesn't have any GML files, skipping the process.");
-    return;
+    hasGML = false;
 }
 
 EnsureDataLoaded();
 
-foreach (string file in dirFiles)
+if (hasGML)
 {
-    PrintMessage($"Importing {Path.GetFileName(file)}");
-    ImportGMLFile(file, true, false, true);
+    foreach (string file in dirFiles)
+    {
+        PrintMessage($"Importing {Path.GetFileName(file)}");
+        ImportGMLFile(file, true, false, true);
+    }
+}
+
+string collisionDir = "./mods/code/collision";
+CreateDirectoryIfNotExists(collisionDir);
+string[] collisionFiles = Directory.GetFiles(collisionDir, "*.gml");
+
+if (collisionFiles.Length == 0)
+{
+    PrintMessage("The collision import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, collisionDir)) + " , skipping the process");
+    hasCollisionGML = false;
+}
+else if (!collisionFiles.Any(x => x.EndsWith(".gml")))
+{
+    PrintMessage("The collision import folder doesn't have any GML files, skipping the process.");
+    hasCollisionGML = false;
+}
+
+if (hasCollisionGML)
+{
+    foreach (string file in collisionFiles)
+    {
+        PrintMessage($"Importing {Path.GetFileName(file)}");
+        var filename = Path.GetFileName(file);
+
+        int startIdx = filename.IndexOf("Object_") + "Object_".Length;
+        int endIdx = filename.IndexOf("_Collision_");
+        var parentObjName = filename.Substring(startIdx, endIdx - startIdx);
+
+        startIdx = filename.IndexOf("_Collision_") + "_Collision_".Length;
+        var childObjName = filename.Substring(startIdx);
+        childObjName = childObjName.Substring(0, childObjName.Length - ".gml".Length);
+
+        var parentObj = Data.GameObjects.ByName($"{parentObjName}");
+        var childObjIndex = Data.GameObjects.IndexOf(Data.GameObjects.ByName($"{childObjName}"));
+
+        parentObj.EventHandlerFor(EventType.Collision, (uint)childObjIndex, Data.Strings, Data.Code, Data.CodeLocals).ReplaceGML(File.ReadAllText(file), Data);
+    }
 }
