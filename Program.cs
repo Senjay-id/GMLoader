@@ -7,7 +7,13 @@ using Newtonsoft.Json.Linq;
 using Standart.Hash.xxHash;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Text.Json;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Collections;
+using System.Threading;
+using System.Threading.Tasks;
 using UndertaleModLib;
 using UndertaleModLib.Decompiler;
 using UndertaleModLib.Models;
@@ -343,7 +349,10 @@ public class GMLoaderProgram
             .WithReferences(references)
             .AddImports("UndertaleModLib", "UndertaleModLib.Models", "UndertaleModLib.Decompiler",
                 "UndertaleModLib.Scripting", "UndertaleModLib.Compiler",
-                "UndertaleModLib.Util", "GMLoader", "GMLoader.GMLoaderProgram", "System", "System.Linq", "System.IO", "System.Collections.Generic", "Microsoft.Extensions.Configuration", "System.Text.Json", "Newtonsoft.Json.Linq")
+                "UndertaleModLib.Util", "GMLoader", "GMLoader.GMLoaderProgram", "System", "System.Linq", 
+                "System.IO", "System.Collections.Generic", "System.Drawing", "System.Drawing.Imaging", 
+                "System.Collections", "System.Text.RegularExpressions", "System.Text.Json", "System.Diagnostics",
+                "System.Threading", "System.Threading.Tasks", "Microsoft.Extensions.Configuration", "Newtonsoft.Json.Linq")
             // "WithEmitDebugInformation(true)" not only lets us to see a script line number which threw an exception,
             // but also provides other useful debug info when we run UMT in "Debug".
             .WithEmitDebugInformation(true);
