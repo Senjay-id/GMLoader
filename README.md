@@ -9,8 +9,8 @@ You will only need to run the program once everytime you install/remove a mod th
 * Append GML code by importing the gml files inside GameFolder/mods/code/appendgml/Any Folder Name/*.gml
 * Existing GameObjects Manipulation by loading configuration files inside GameFolder/mods/config/existing_object/*.json
 * Add and Manipulate new GameObjects by loading configuration files inside GameFolder/mods/config/new_object/*.json
-* Import shaders by loading exported shader files inside GameFolder/mods/shader/shd_myshaderfolder
-* Load your own custom CSharp Script files inside GameFolder/csx/*.csx
+* Import shaders by loading exported shader files inside GameFolder/mods/shader/*any_shader_folder
+* Load your own custom CSharp Script files inside GameFolder/csx/pre/*.csx or GameFolder/csx/post/*.csx
 * Add or replace collision event code by loading the gml files inside GameFolder/mods/code/collision/*.gml
 * Append collision event code by loading the gml files inside GameFolder/mods/code/appendgml/collision/Any Folder Name/*.gml
 
