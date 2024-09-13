@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Ini;
 using Newtonsoft.Json.Linq;
+using Serilog;
 using Standart.Hash.xxHash;
 using System.Diagnostics;
 using System.Reflection;
@@ -19,6 +20,7 @@ using UndertaleModLib.Decompiler;
 using UndertaleModLib.Models;
 using UndertaleModLib.Scripting;
 using UndertaleModLib.Util;
+using Serilog.Events;
 #endregion
 
 namespace GMLoader;
@@ -34,16 +36,20 @@ public class GMLoaderProgram
     {
         try
         {
-            Console.Title = "GMLoader";
-
             if (File.Exists("GMLoader.log"))
-            {
                 File.Delete("GMLoader.log");
-            }
+
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
+                .WriteTo.File("GMLoader.log")
+                .CreateLogger();
+
+            Console.Title = "GMLoader";
 
             if (!File.Exists("GMLoader.ini"))
             {
-                PrintMessage("Missing GMLoader.ini file \n\n\nPress any key to close...");
+                Log.Information("Missing GMLoader.ini file \n\n\nPress any key to close...");
                 Console.ReadKey();
                 Environment.Exit(0);
             }
@@ -56,6 +62,7 @@ public class GMLoaderProgram
             #region Field
             string backupDataPath = configuration["universal:databackup"];
             string gameDataPath = configuration["universal:originaldata"];
+            string modsPath = configuration["universal:modsdirectory"];
 
             string importPreCSXPath = configuration["universal:importprecsx"];
             string compilePreCSXString = configuration["universal:compileprecsx"];
@@ -77,10 +84,18 @@ public class GMLoaderProgram
             bool autoGameStart = bool.Parse(autoGameStartString);
             ulong currentHash = 0;
             #endregion
+            mkDir(modsPath);
+            mkDir(importPreCSXPath);
+            mkDir(importBuiltInCSXPath);
+            mkDir(importPostCSXPath);
 
-            CreateDirectoryIfNotExists(importPreCSXPath);
-            CreateDirectoryIfNotExists(importBuiltInCSXPath);
-            CreateDirectoryIfNotExists(importPostCSXPath);
+            string modsPathAbsoluteDir = Path.GetFullPath(modsPath);
+            if (Directory.Exists(modsPath))
+            {
+                Log.Debug($"Scanning the filetree of {modsPathAbsoluteDir}");
+                Log.Debug($"{Path.GetFileName(modsPathAbsoluteDir)}");
+                PrintFileTree(modsPath, "", true);
+            }
 
             string[] dirPreCSXFiles = Directory.GetFiles(importPreCSXPath, "*.csx");
             string[] dirBuiltInCSXFiles = Directory.GetFiles(importBuiltInCSXPath, "*.csx");
@@ -88,26 +103,24 @@ public class GMLoaderProgram
 
             if (!compilePreCSX && !compileBuiltInCSX && !compilePostCSX)
             {
-                PrintMessage("What's the point of using GMLoader if you disable CSX COMPILING REEEEEEEEEEE \n\n\nPress any key to close...");
+                Log.Information("What's the point of using GMLoader if you disable CSX COMPILING AAAAAAAAAAAAAAAAA \n\n\nPress any key to close...");
                 Console.ReadKey();
                 Environment.Exit(0);
             }
             else if (dirBuiltInCSXFiles.Length == 0 && dirPreCSXFiles.Length == 0 && dirPostCSXFiles.Length == 0)
             {
-                PrintMessage($"The CSX Script folder path is empty.\nAborting the process\n\n\nPress any key to close...");
+                Log.Information($"The CSX Script folder path is empty.\nAborting the process\n\n\nPress any key to close...");
                 Console.ReadKey();
                 Environment.Exit(0);
             }
             else if (!dirBuiltInCSXFiles.Any(x => x.EndsWith(".csx")) && !dirPreCSXFiles.Any(x => x.EndsWith(".csx")) && !dirPostCSXFiles.Any(x => x.EndsWith(".csx")))
             {
-                PrintMessage($"No CSX Script file found in the csx directory.\nAborting the process\n\n\nPress any key to close...");
+                Log.Information($"No CSX Script file found in the csx directory.\nAborting the process\n\n\nPress any key to close...");
                 Console.ReadKey();
                 Environment.Exit(0);
             }
 
-            Console.ForegroundColor = ConsoleColor.DarkYellow;
-            PrintMessage(DateTime.Now.ToString() + "\n\nReading game data...\n");
-            Console.ResetColor();
+            Log.Information("Reading game data...");
 
             if (File.Exists(backupDataPath))
             {
@@ -122,7 +135,7 @@ public class GMLoaderProgram
             }
             else if (File.Exists(backupDataPath) && supportedHashVersion != currentHash.ToString())
             {
-                PrintMessage("Game Data Hash Mismatch Error\nThis happens because loader is outdated or the data.win is modified.\nDelete backup.win and verify the integrity of game.\n\n\nPress any key to close...");
+                Log.Information("\nGame Data Hash Mismatch Error.\nThis happens because modloader is outdated or the data.win is modified.\n\nDelete backup.win and verify the integrity of game.\n\nIf your using MO2, check the overwrite folder and delete backup.win\n\n\nPress any key to close...");
                 Console.ReadKey();
                 Environment.Exit(0);
             }
@@ -131,13 +144,11 @@ public class GMLoaderProgram
                 using (var stream = new FileStream(gameDataPath, FileMode.Open, FileAccess.ReadWrite))
                     Data = UndertaleIO.Read(stream);
                 File.Copy(gameDataPath, backupDataPath);
-                PrintMessage("Backup of the data has been created");
+                Log.Information("Backup of the data has been created");
             }
 
             Console.Title = $"GMLoader  -  {Data.GeneralInfo.Name.Content}";
-            Console.ForegroundColor = ConsoleColor.Magenta;
-            PrintMessage($"\nLoaded game {Data.GeneralInfo.Name.Content}");
-            Console.ResetColor();
+            Log.Information($"Loaded game {Data.GeneralInfo.Name.Content}");
 
             //CSX Handling
             ScriptOptionsInitialize();
@@ -147,7 +158,7 @@ public class GMLoaderProgram
             {
                 if (compilePreCSX)
                 {
-                    PrintMessage("\nLoading pre-CSX Scripts.");
+                    Log.Information("Loading pre-CSX Scripts.");
                     foreach (string file in dirPreCSXFiles)
                     {
                         RunCSharpFile(file);
@@ -155,16 +166,16 @@ public class GMLoaderProgram
                 }
                 else
                 {
-                    PrintMessage("\nPre-Loading CSX script is disabled, skipping the process.");
+                    Log.Information("Pre-Loading CSX script is disabled, skipping the process.");
                 }
             }
             else if (compilePreCSX)
             {
-                PrintMessage($"\nThe pre-CSX folder is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPreCSXPath))} , skipping the process.");
+                Log.Information($"The pre-CSX folder is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPreCSXPath))} , skipping the process.");
             }
             else if (compilePreCSX && !dirPreCSXFiles.Any(x => x.EndsWith(".csx")))
             {
-                PrintMessage($"\nNo pre-CSX script file found. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPreCSXPath))} , skipping the process.");
+                Log.Information($"No pre-CSX script file found. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPreCSXPath))} , skipping the process.");
             }
 
             //Compile builtin scripts
@@ -172,7 +183,7 @@ public class GMLoaderProgram
             {
                 if (compileBuiltInCSX)
                 {
-                    PrintMessage("\nLoading builtin-CSX scripts.");
+                    Log.Information("Loading builtin-CSX scripts.");
                     foreach (string file in dirBuiltInCSXFiles)
                     {
                         RunCSharpFile(file);
@@ -180,16 +191,16 @@ public class GMLoaderProgram
                 }
                 else
                 {
-                    PrintMessage("\nLoading builtin-CSX script is disabled, skipping the process.");
+                    Log.Information("Loading builtin-CSX script is disabled, skipping the process.");
                 }
             }
             else if (compileBuiltInCSX)
             {
-                PrintMessage($"\nThe builtin-CSX folder path is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importBuiltInCSXPath))} , skipping the process.");
+                Log.Information($"The builtin-CSX folder path is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importBuiltInCSXPath))} , skipping the process.");
             }
             else if (compileBuiltInCSX && !dirBuiltInCSXFiles.Any(x => x.EndsWith(".csx")))
             {
-                PrintMessage($"\nNo builtin-CSX script file found at {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importBuiltInCSXPath))} , skipping the process.");
+                Log.Information($"No builtin-CSX script file found at {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importBuiltInCSXPath))} , skipping the process.");
             }
 
             //Compile users script after builtin scripts
@@ -198,7 +209,7 @@ public class GMLoaderProgram
             {
                 if (compilePostCSX)
                 {
-                    PrintMessage("\nLoading post-CSX Scripts.");
+                    Log.Information("Loading post-CSX Scripts.");
                     foreach (string file in dirPostCSXFiles)
                     {
                         RunCSharpFile(file);
@@ -206,64 +217,52 @@ public class GMLoaderProgram
                 }
                 else
                 {
-                    PrintMessage("\nLoading post-CSX script is disabled, skipping the process.");
+                    Log.Information("Loading post-CSX script is disabled, skipping the process.");
                 }
             }
             else if (compilePostCSX)
             {
-                PrintMessage($"\nThe post-CSX folder is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPostCSXPath))} , skipping the process.");
+                Log.Information($"The post-CSX folder is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPostCSXPath))} , skipping the process.");
             }
             else if (compilePostCSX && !dirPostCSXFiles.Any(x => x.EndsWith(".csx")))
             {
-                PrintMessage($"\nNo post-CSX script file found At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPostCSXPath))} , skipping the process.");
+                Log.Information($"No post-CSX script file found At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPostCSXPath))} , skipping the process.");
             }
 
-            Console.ForegroundColor = ConsoleColor.DarkYellow;
-            PrintMessage("\nRecompiling the data...");
+            Log.Information("Recompiling the data...");
             using (var stream = new FileStream(gameDataPath, FileMode.Create, FileAccess.ReadWrite))
                 UndertaleIO.Write(stream, Data);
-            Console.ResetColor();
 
             if (autoGameStart)
             {
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                PrintMessage("\nGame Data has been recompiled, Launching the game...");
+                Log.Information("Game Data has been recompiled, Launching the game...");
                 Process.Start(gameExecutable);
                 Thread.Sleep(3000);
                 Environment.Exit(0);
             }
             else
             {
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                PrintMessage("\nGame Data has been recompiled, you can now launch the modded data through the game executable.\n\n\nPress any key to close...");
+                Log.Information("Game Data has been recompiled, you can now launch the modded data through the game executable.\n\n\nPress any key to close...");
                 Console.ReadKey();
                 Environment.Exit(0);
             }
         }
         catch (Exception e)
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            PrintMessage("An error occurred: " + e.Message);
-            Console.ResetColor();
-            Console.WriteLine("\nPress any key to close...");
+            Log.Warning("An error occurred: " + e.Message);
+            Console.WriteLine("Press any key to close...");
             Console.ReadKey();
         }
     }
 
     #region Helper Methods
 
-    public static void CreateDirectoryIfNotExists(string path)
+    public static void mkDir(string path)
     {
         if (!Directory.Exists(path))
         {
             Directory.CreateDirectory(path);
         }
-    }
-
-    public static void PrintMessage(string message)
-    {
-        Console.WriteLine(message);
-        File.AppendAllText("GMLoader.log", "\n" + message);
     }
 
     public static ulong ComputeFileHash(string filePath)
@@ -274,7 +273,36 @@ public class GMLoaderProgram
             return hash;
         }
     }
+    private static void PrintFileTree(string path, string indent, bool isLast)
+    {
+        string[] files = Directory.GetFiles(path);
+        string[] directories = Directory.GetDirectories(path);
 
+        // Process files in the current directory
+        for (int i = 0; i < files.Length; i++)
+        {
+            bool lastFile = (i == files.Length - 1 && directories.Length == 0);
+            string prefix = lastFile ? "└── " : "├── ";
+            Log.Debug($"{indent}{prefix}{Path.GetFileName(files[i])}");
+        }
+
+        // Process subdirectories, excluding 'lib'
+        for (int i = 0; i < directories.Length; i++)
+        {
+            string dirName = Path.GetFileName(directories[i]);
+            if (dirName.Equals("lib", StringComparison.OrdinalIgnoreCase))
+                continue; // Skip 'lib' directory
+
+            bool lastDir = i == directories.Length - 1;
+            string dirPrefix = lastDir ? "└── " : "├── ";
+
+            Log.Debug($"{indent}{dirPrefix}{dirName}");
+
+            // Recursive call with updated indent
+            string newIndent = indent + (lastDir ? "    " : "|   ");
+            PrintFileTree(directories[i], newIndent, lastDir);
+        }
+    }
     #endregion
 
     #region Script Handling
@@ -289,7 +317,7 @@ public class GMLoaderProgram
         catch (Exception exc)
         {
             // rethrow as otherwise this will get interpreted as success
-            PrintMessage(exc.Message);
+            Log.Information(exc.Message);
             throw;
         }
 
@@ -300,9 +328,7 @@ public class GMLoaderProgram
 
     private static void RunCSharpCode(string code, string scriptFile = null)
     {
-        Console.ForegroundColor = ConsoleColor.DarkYellow;
-        PrintMessage($"\nAttempting to execute '{Path.GetFileName(scriptFile)}'");
-        Console.ResetColor();
+        Log.Information($"Attempting to execute '{Path.GetFileName(scriptFile)}'");
         var ScriptErrorMessage = "";
         var ScriptExecutionSuccess = false;
         try
@@ -316,20 +342,18 @@ public class GMLoaderProgram
             ScriptExecutionSuccess = false;
             ScriptErrorMessage = exc.ToString();
             //ScriptErrorType = "Exception";
-            PrintMessage(exc.ToString());
+            Log.Information(exc.ToString());
         }
 
         //if (!FinishedMessageEnabled) return;
 
         if (ScriptExecutionSuccess)
         {
-            Console.ForegroundColor = ConsoleColor.Green;
-            PrintMessage($"Finished executing '{Path.GetFileName(scriptFile)}'");
-            Console.ResetColor();
+            Log.Information($"Finished executing '{Path.GetFileName(scriptFile)}'");
         }
         else
         {
-            PrintMessage(ScriptErrorMessage);
+            Log.Information(ScriptErrorMessage);
         }
     }
 
@@ -349,7 +373,7 @@ public class GMLoaderProgram
             .WithReferences(references)
             .AddImports("UndertaleModLib", "UndertaleModLib.Models", "UndertaleModLib.Decompiler",
                 "UndertaleModLib.Scripting", "UndertaleModLib.Compiler",
-                "UndertaleModLib.Util", "GMLoader", "GMLoader.GMLoaderProgram", "System", "System.Linq", 
+                "UndertaleModLib.Util", "GMLoader", "GMLoader.GMLoaderProgram", "Serilog", "System", "System.Linq", 
                 "System.IO", "System.Collections.Generic", "System.Drawing", "System.Drawing.Imaging", 
                 "System.Collections", "System.Text.RegularExpressions", "System.Text.Json", "System.Diagnostics",
                 "System.Threading", "System.Threading.Tasks", "Microsoft.Extensions.Configuration", "Newtonsoft.Json.Linq")

@@ -15,17 +15,17 @@ bool hasGML = true;
 bool hasCollisionGML = true;
 
 string modDir = "./mods/code/appendgml";
-CreateDirectoryIfNotExists(modDir);
+mkDir(modDir);
 string[] directories = Directory.GetDirectories(modDir);
 
 if (!compileGML)
 {
-    PrintMessage("GML compiling is disabled, skipping the process.");
+    Log.Debug("GML compiling is disabled, skipping the process.");
     return;
 }
 else if (directories.Length == 0)
 {
-    PrintMessage("The appendGML import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, modDir)) + " , skipping the process");
+    Log.Debug("The appendGML import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, modDir)) + " , skipping the process");
     hasGML = false;
 }
 
@@ -39,7 +39,7 @@ if (hasGML)
 
         foreach (string file in dirFiles)
         {
-            PrintMessage($"Appending {Path.GetFileName(file)} from {Path.GetRelativePath(modDir, directory)} Folder");
+            Log.Information($"Appending {Path.GetFileName(file)} from {Path.GetRelativePath(modDir, directory)} Folder");
             Data.Code.ByName(Path.GetFileNameWithoutExtension(file)).AppendGML(File.ReadAllText(file), Data);
         }
     }
@@ -47,12 +47,12 @@ if (hasGML)
 
 //collision handling
 string collisionDir = "./mods/code/appendgml/collision";
-CreateDirectoryIfNotExists(collisionDir);
+mkDir(collisionDir);
 string[] collisionDirectories = Directory.GetDirectories(collisionDir);
 
 if (collisionDirectories.Length == 0)
 {
-    PrintMessage("The collision import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, collisionDir)) + " , skipping the process");
+    Log.Debug("The collision import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, collisionDir)) + " , skipping the process");
     hasCollisionGML = false;
 }
 
@@ -64,7 +64,7 @@ if (hasCollisionGML)
 
         foreach (string file in collisionFiles)
         {
-            PrintMessage($"Appending {Path.GetFileName(file)} from {Path.GetRelativePath(collisionDir, directory)} Folder");
+            Log.Information($"Appending {Path.GetFileName(file)} from {Path.GetRelativePath(collisionDir, directory)} Folder");
             var filename = Path.GetFileName(file);
 
             int startIdx = filename.IndexOf("Object_") + "Object_".Length;

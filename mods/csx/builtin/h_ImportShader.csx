@@ -5,13 +5,13 @@ void EnsureDataLoaded()
 }
 
 string shaderDir = "./mods/shader";
-CreateDirectoryIfNotExists(shaderDir);
+mkDir(shaderDir);
 
 string[] directories = Directory.GetDirectories(shaderDir);
 
 if (directories.Length == 0)
 {
-    PrintMessage("The shader import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, shaderDir)) + " , skipping the process");
+    Log.Debug("The shader import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, shaderDir)) + " , skipping the process");
     return;
 }
 
@@ -27,7 +27,7 @@ string res = "";
 
 foreach (string directory in directories)
 {
-    PrintMessage($"Importing Shader {Path.GetRelativePath(shaderDir, directory)}");
+    Log.Information($"Importing Shader {Path.GetRelativePath(shaderDir, directory)}");
 
     foreach (string shaderName in shadersToModify)
     {
@@ -260,7 +260,7 @@ void AddShader(string shader_name)
         string line;
         // Read the file and display it line by line.
         StreamReader file = new StreamReader(localImportDir + "VertexShaderAttributes.txt");
-        while((line = file.ReadLine()) != null)
+        while ((line = file.ReadLine()) != null)
         {
             if (line != "")
             {
@@ -294,7 +294,8 @@ void Reorganize<T>(IList<T> list, List<string> order) where T : UndertaleNamedRe
         try
         {
             asset = temp[order[i]];
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
             throw new ScriptException("Missing asset with name \"" + order[i] + "\"");
         }

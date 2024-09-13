@@ -249,8 +249,8 @@ void SafeImport(string codeName, string gmlCode, bool isGML, bool destroyASM = t
     {
         if (!checkDecompiler)
         {
-            string errorText = $"Code import error at {(isGML ? "GML" : "ASM")} code \"{codeName}\":\n\n{ex.Message}";
-            PrintMessage(errorText);    //Console.Error.WriteLine(errorText); //Modified to suit GMLoader
+            string errorText = $"Code import error at {(isGML ? "GML" : "ASM")} code \"{codeName}\": {ex.Message}";
+            Log.Error(errorText);    //Console.Error.WriteLine(errorText); //Modified to suit GMLoader
 
             if (throwOnError)
                 throw new ScriptException("*codeImportError*");
@@ -362,7 +362,7 @@ void ImportCode(string codeName, string gmlCode, bool isGML = true, bool doParse
                 if (methodName == "Collision" && (methodNumber >= Data.GameObjects.Count || methodNumber < 0))
                 {
                     bool doNewObj = true; //ScriptQuestion("Object of ID " + methodNumber.ToString() + " was not found.\nAdd new object?"); \\Modified to suit GMLoader
-                    PrintMessage("Object of ID " + methodNumber.ToString() + " was not found.\nAdding the object.");
+                    Log.Information("Object of ID " + methodNumber.ToString() + " was not found, Adding the object.");
                     if (doNewObj)
                     {
                         UndertaleGameObject gameObj = new UndertaleGameObject();
@@ -403,7 +403,7 @@ void ImportCode(string codeName, string gmlCode, bool isGML = true, bool doParse
                         else
                         {
                             bool doNewObj = true; //ScriptQuestion("Object " + objName + " was not found.\nAdd new object called " + objName + "?"); \\Modified to suit GMLoader
-                            PrintMessage($"\nObject {objName} was not found. Adding the object...\n");
+                            Log.Information($"Object {objName} was not found. Adding the object...");
                             if (doNewObj)
                             {
                                 UndertaleGameObject gameObj = new UndertaleGameObject();
@@ -431,7 +431,7 @@ void ImportCode(string codeName, string gmlCode, bool isGML = true, bool doParse
             if (obj == null)
             {
                 bool doNewObj = true; //ScriptQuestion("Object " + objName + " was not found.\nAdd new object called " + objName + "?"); //Modified to suit GMLoader
-                PrintMessage($"\nObject {objName} was not found. Adding the object...\n");
+                Log.Information($"Object {objName} was not found. Adding the object...");
                 if (doNewObj)
                 {
                     UndertaleGameObject gameObj = new UndertaleGameObject();
@@ -505,7 +505,7 @@ void ImportCodeFromFile(string file, bool isGML = true, bool doParse = true, boo
     {
         if (!checkDecompiler)
         {
-            PrintMessage("Import" + (isGML ? "GML" : "ASM") + "File error! Send the following error to Grossley#2869 (Discord) and make an issue on Github:\n\n" + exc); //Console.Error.WriteLine("Import" + (isGML ? "GML" : "ASM") + "File error! Send the following error to Grossley#2869 (Discord) and make an issue on Github:\n\n" + exc); \\Modified to suit GMLoader
+            Log.Error("Import" + (isGML ? "GML" : "ASM") + "File error! Send the following error to Grossley#2869 (Discord) and make an issue on Github: " + exc); //Console.Error.WriteLine("Import" + (isGML ? "GML" : "ASM") + "File error! Send the following error to Grossley#2869 (Discord) and make an issue on Github:\n\n" + exc); \\Modified to suit GMLoader
 
             if (throwOnError)
                 throw new ScriptException("Code files importation stopped because of error(s).");
@@ -537,22 +537,22 @@ bool hasGML = true;
 bool hasCollisionGML = true;
 
 string modDir = "./mods/code";
-CreateDirectoryIfNotExists(modDir);
+mkDir(modDir);
 string[] dirFiles = Directory.GetFiles(modDir, "*.gml");
 
 if (!compileGML)
 {
-    PrintMessage("GML compiling is disabled, skipping the process.");
+    Log.Debug("GML compiling is disabled, skipping the process.");
     return;
 }
 else if (dirFiles.Length == 0)
 {
-    PrintMessage("The GML import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, modDir)) + " , skipping the process");
+    Log.Debug("The GML import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, modDir)) + " , skipping the process");
     hasGML = false;
 }
 else if (!dirFiles.Any(x => x.EndsWith(".gml")))
 {
-    PrintMessage("The GML import folder doesn't have any GML files, skipping the process.");
+    Log.Debug("The GML import folder doesn't have any GML files, skipping the process.");
     hasGML = false;
 }
 
@@ -562,23 +562,23 @@ if (hasGML)
 {
     foreach (string file in dirFiles)
     {
-        PrintMessage($"Importing {Path.GetFileName(file)}");
+        Log.Information($"Importing {Path.GetFileName(file)}");
         ImportGMLFile(file, true, false, true);
     }
 }
 
 string collisionDir = "./mods/code/collision";
-CreateDirectoryIfNotExists(collisionDir);
+mkDir(collisionDir);
 string[] collisionFiles = Directory.GetFiles(collisionDir, "*.gml");
 
 if (collisionFiles.Length == 0)
 {
-    PrintMessage("The collision import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, collisionDir)) + " , skipping the process");
+    Log.Debug("The collision import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, collisionDir)) + " , skipping the process");
     hasCollisionGML = false;
 }
 else if (!collisionFiles.Any(x => x.EndsWith(".gml")))
 {
-    PrintMessage("The collision import folder doesn't have any GML files, skipping the process.");
+    Log.Debug("The collision import folder doesn't have any GML files, skipping the process.");
     hasCollisionGML = false;
 }
 
@@ -586,7 +586,7 @@ if (hasCollisionGML)
 {
     foreach (string file in collisionFiles)
     {
-        PrintMessage($"Importing {Path.GetFileName(file)}");
+        Log.Information($"Importing {Path.GetFileName(file)}");
         var filename = Path.GetFileName(file);
 
         int startIdx = filename.IndexOf("Object_") + "Object_".Length;

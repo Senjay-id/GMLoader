@@ -1,15 +1,15 @@
 string configDir = "./mods/config/existing_object";
-CreateDirectoryIfNotExists(configDir);
+mkDir(configDir);
 string[] objFiles = Directory.GetFiles(configDir, "*.json");
 
 if (objFiles.Length == 0)
 {
-    PrintMessage("The config import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, configDir)) + " , skipping the process");
+    Log.Debug("The config import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, configDir)) + " , skipping the process");
     return;
 }
 else if (!objFiles.Any(x => x.EndsWith(".json")))
 {
-    PrintMessage("The config folder doesn't have any json files, skipping the process.");
+    Log.Debug("The config folder doesn't have any json files, skipping the process.");
     return;
 }
 
@@ -40,7 +40,7 @@ bool _objIsKinematic;
 
 foreach (string file in objFiles)
 {
-    PrintMessage($"Manipulating existing {Path.GetFileNameWithoutExtension(file)} properties");
+    Log.Information($"Manipulating existing {Path.GetFileNameWithoutExtension(file)} properties");
     _objName = Path.GetFileNameWithoutExtension(file);
 
     jsonContent = File.ReadAllText(file);
@@ -72,7 +72,7 @@ foreach (string file in objFiles)
     Obj.IsSensor = _objIsSensor;
 
     //Physics Properties (unimplemented)
-    
+
 }
 
 
