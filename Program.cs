@@ -59,7 +59,7 @@ public class GMLoaderProgram
                 .AddIniFile("GMLoader.ini", optional: false, reloadOnChange: false)
                 .Build();
 
-            #region Field
+            #region Config
             string backupDataPath = configuration["universal:databackup"];
             string gameDataPath = configuration["universal:originaldata"];
             string modsPath = configuration["universal:modsdirectory"];
@@ -144,7 +144,7 @@ public class GMLoaderProgram
                 using (var stream = new FileStream(gameDataPath, FileMode.Open, FileAccess.ReadWrite))
                     Data = UndertaleIO.Read(stream);
                 File.Copy(gameDataPath, backupDataPath);
-                Log.Information("Backup of the data has been created");
+                Log.Information($"Backup of the data has been created at {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, backupDataPath))}");
             }
 
             Console.Title = $"GMLoader  -  {Data.GeneralInfo.Name.Content}";
@@ -171,11 +171,11 @@ public class GMLoaderProgram
             }
             else if (compilePreCSX)
             {
-                Log.Information($"The pre-CSX folder is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPreCSXPath))} , skipping the process.");
+                Log.Debug($"The pre-CSX folder is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPreCSXPath))} , skipping the process.");
             }
             else if (compilePreCSX && !dirPreCSXFiles.Any(x => x.EndsWith(".csx")))
             {
-                Log.Information($"No pre-CSX script file found. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPreCSXPath))} , skipping the process.");
+                Log.Debug($"No pre-CSX script file found. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPreCSXPath))} , skipping the process.");
             }
 
             //Compile builtin scripts
@@ -222,11 +222,11 @@ public class GMLoaderProgram
             }
             else if (compilePostCSX)
             {
-                Log.Information($"The post-CSX folder is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPostCSXPath))} , skipping the process.");
+                Log.Debug($"The post-CSX folder is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPostCSXPath))} , skipping the process.");
             }
             else if (compilePostCSX && !dirPostCSXFiles.Any(x => x.EndsWith(".csx")))
             {
-                Log.Information($"No post-CSX script file found At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPostCSXPath))} , skipping the process.");
+                Log.Debug($"No post-CSX script file found At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPostCSXPath))} , skipping the process.");
             }
 
             Log.Information("Recompiling the data...");

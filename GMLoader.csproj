@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
     <InvariantGlobalization>true</InvariantGlobalization>
     <ApplicationIcon>CatHead-export.ico</ApplicationIcon>
+    <Configurations>Debug;Release;ZeroSievertRelease</Configurations>
   </PropertyGroup>
 
 	<PropertyGroup>
@@ -43,6 +44,10 @@
 		<!-- set to a repo mirror if you have troble in connecting github -->
 		<!-- <BeautyGitCDN>https://gitee.com/liesauer/HostFXRPatcher</BeautyGitCDN> -->
 		<!-- <BeautyGitTree>master</BeautyGitTree> -->
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ZeroSievertRelease|AnyCPU'">
+	  <Optimize>True</Optimize>
 	</PropertyGroup>
 	
   <ItemGroup>
@@ -86,6 +91,9 @@
     </None>
     <None Update="GMLoader.log">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="mods\code\gml_GlobalScript_trace_error.gml">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
     <None Update="mods\csx\builtin\h_ImportShader.csx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
