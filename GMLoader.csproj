@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <InvariantGlobalization>true</InvariantGlobalization>
     <ApplicationIcon>CatHead-export.ico</ApplicationIcon>
-    <Configurations>Debug;Release;ZeroSievertRelease</Configurations>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
 
 	<PropertyGroup>
