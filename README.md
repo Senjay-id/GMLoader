@@ -14,11 +14,8 @@ GMLoader is a program that can recompile non-YYC GM:Studio games data using [Und
 ### Yet to be added
 * Importing Room
 
-### Guide for users
-[User guide](https://github.com/Senjay-id/GMLoader/wiki/For-Users)
-
-### Documentation for mod developer
-TBA
+### [Wiki](https://github.com/Senjay-id/GMLoader/wiki)
+Contains User guide and Modders guide
 
 ### Building
 * Clone the project
