@@ -1,9 +1,6 @@
-GMLoader is a program that can load CSharp Script files and recompile non-YYC GM:Studio games using [UndertalModLib](https://github.com/krzys-h/UndertaleModTool). It will make a backup of your data files to ensure that you'll never corrupt your game data while recompiling. 
+GMLoader is a program that can recompile non-YYC GM:Studio games data using [UndertalModLib](https://github.com/krzys-h/UndertaleModTool).
 
-
-You will only need to run the program once everytime you install/remove a mod that requires GMLoader. This will save your time in recompiling the game's data.
-
-# Features
+### Features
 * Adding or Replacing GML assets by loading the gml files inside GameFolder/mods/code/*.gml
 * Supports Gamemaker's assembly recompiling by loading the asm files inside GameFolder/mods/code/asm/*.asm
 * Append GML code by importing the gml files inside GameFolder/mods/code/appendgml/Any Folder Name/*.gml
@@ -14,18 +11,21 @@ You will only need to run the program once everytime you install/remove a mod th
 * Add or replace collision event code by loading the gml files inside GameFolder/mods/code/collision/*.gml
 * Append collision event code by loading the gml files inside GameFolder/mods/code/appendgml/collision/Any Folder Name/*.gml
 
-# Yet to be added
+### Yet to be added
 * Importing Room
 
-# Wiki
+### Guide for users
+[User guide](https://github.com/Senjay-id/GMLoader/wiki/For-Users)
+
+### Documentation for mod developer
 TBA
 
-# Building
+### Building
 * Clone the project
 * Compile [UndertalModLib](https://github.com/krzys-h/UndertaleModTool) and [xxHash](https://github.com/uranium62/xxHash) then put their dll inside the lib folder
 * Open the solution and build
 
-# Credits
+### Credits
 [UTMT Team](https://github.com/krzys-h/UndertaleModTool) - All of this isn't possible without the UTMT tool and library
 
 [GMLML](https://github.com/BlurOne-GIT/GML-Mod-Loader) - For the ProofOfConcept Code
