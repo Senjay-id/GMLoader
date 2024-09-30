@@ -1,8 +1,6 @@
 ﻿#region Using Directives
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.Ini;
 using Newtonsoft.Json.Linq;
 using Serilog;
 using Standart.Hash.xxHash;
@@ -21,15 +19,112 @@ using UndertaleModLib.Models;
 using UndertaleModLib.Scripting;
 using UndertaleModLib.Util;
 using Serilog.Events;
+using Config.Net;
+using ImageMagick;
 #endregion
 
 namespace GMLoader;
+public interface IConfig
+{
+    public bool AutoGameStart { get; }
+    public string GameExecutable { get; }
+    public string SupportedDataHash { get; }
+    public string ImportPreCSX { get; }
+    public string ImportBuiltinCSX { get; }
+    public string ImportPostCSX { get; }
+    public string ImportAfterCSX { get; }
+    public bool CompilePreCSX { get; }
+    public bool CompileBuiltinCSX { get; }
+    public bool CompilePostCSX { get; }
+    public bool CompileAfterCSX { get; }
+    public bool CompileGML { get; }
+    public bool CompileASM { get; }
+    public string BackupData { get; }
+    public string GameData { get; }
+    public string ModsDirectory { get; }
+    public string TexturesDirectory { get; }
+    public string ShaderDirectory { get; }
+    public string ConfigDirectory { get; }
+    public string GMLCodeDirectory { get; }
+    public string CollisionDirectory { get; }
+    public string ASMDirectory { get; }
+    public string AppendGMLDirectory { get; }
+    public string AppendGMLCollisionDirectory { get; }
+    public string NewObjectDirectory { get; }
+    public string ExistingObjectDirectory { get; }
+    public int DefaultSpriteX { get; }
+    public int DefaultSpriteY { get; }
+    public uint DefaultSpriteSpeedType { get; }
+    public float DefaultSpriteFrameSpeed { get; }
+    public uint DefaultSpriteBoundingBoxType { get; }
+    public int DefaultSpriteBoundingBoxLeft { get; }
+    public int DefaultSpriteBoundingBoxRight { get; }
+    public int DefaultSpriteBoundingBoxBottom { get; }
+    public int DefaultSpriteBoundingBoxTop { get; }
+    public uint DefaultSpriteSepMasksType { get; }
+    public bool DefaultSpriteTransparent { get; }
+    public bool DefaultSpriteSmooth { get; }
+    public bool DefaultSpritePreload { get; }
+    public uint DefaultSpriteSpecialVer { get; }
+    public bool DefaultBGTransparent { get; }
+    public bool DefaultBGSmooth { get; }
+    public bool DefaultBGPreload { get; }
+    public uint DefaultBGTileWidth { get; }
+    public uint DefaultBGTileHeight { get; }
+    public uint DefaultBGBorderX { get; }
+    public uint DefaultBGBorderY { get; }
+    public uint DefaultBGTileColumn { get; }
+    public uint DefaultBGItemOrFramePerTile { get; }
+    public uint DefaultBGTileCount { get; }
+    public int DefaultBGFrameTime { get; }
+}
 
 public class GMLoaderProgram
 {
     #region Properties
     public static UndertaleData Data { get; set; }
     private static ScriptOptions CliScriptOptions { get; set; }
+    public static string modsPath { get; set; }
+    public static string texturesPath { get; set; }
+    public static string shaderPath { get; set; }
+    public static string configPath { get; set; }
+    public static string gmlCodePath { get; set; }
+    public static string collisionPath { get; set; }
+    public static string asmPath { get; set; }
+    public static string appendGMLPath { get; set; }
+    public static string appendGMLCollisionPath { get; set; }
+    public static string newObjectPath { get; set; }
+    public static string existingObjectPath { get; set; }
+    public static bool compileGML { get; set; }
+    public static bool compileASM { get; set; }
+    public static int defaultSpriteX { get; set; }
+    public static int defaultSpriteY { get; set; }
+    public static float defaultSpriteFrameSpeed { get; set; }
+    public static int defaultSpriteBoundingBoxLeft { get; set; }
+    public static int defaultSpriteBoundingBoxRight { get; set; }
+    public static int defaultSpriteBoundingBoxBottom { get; set; }
+    public static int defaultSpriteBoundingBoxTop { get; set; }
+    public static bool defaultSpriteTransparent { get; set; }
+    public static bool defaultSpriteSmooth { get; set; }
+    public static bool defaultSpritePreload { get; set; }
+    public static uint defaultSpriteSpecialVer { get; set; }
+    public static uint defaultSpriteSpeedType { get; set; }
+    public static uint defaultSpriteBoundingBoxType { get; set; }
+    public static uint defaultSpriteSepMasksType { get; set; }
+    public static bool defaultBGTransparent { get; set; }
+    public static bool defaultBGSmooth { get; set; }
+    public static bool defaultBGPreload { get; set; }
+    public static uint defaultBGTileWidth { get; set; }
+    public static uint defaultBGTileHeight { get; set; }
+    public static uint defaultBGBorderX { get; set; }
+    public static uint defaultBGBorderY { get; set; }
+    public static uint defaultBGTileColumn { get; set; }
+    public static uint defaultBGItemOrFramePerTile { get; set; }
+    public static uint defaultBGTileCount { get; set; }
+    public static int defaultBGFrameTime { get; set; }
+
+    public static List<string> spriteList = new List<string>();
+
     #endregion
 
     static void Main()
@@ -54,40 +149,73 @@ public class GMLoaderProgram
                 Environment.Exit(0);
             }
 
-            IConfiguration configuration = new ConfigurationBuilder()
-                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                .AddIniFile("GMLoader.ini", optional: false, reloadOnChange: false)
-                .Build();
+            IConfig config = new ConfigurationBuilder<IConfig>()
+               .UseIniFile("GMLoader.ini")
+               .Build();
 
             #region Config
-            string backupDataPath = configuration["universal:databackup"];
-            string gameDataPath = configuration["universal:originaldata"];
-            string modsPath = configuration["universal:modsdirectory"];
-
-            string importPreCSXPath = configuration["universal:importprecsx"];
-            string compilePreCSXString = configuration["universal:compileprecsx"];
-
-            string importBuiltInCSXPath = configuration["universal:importbuiltincsx"];
-            string compileBuiltInCSXString = configuration["universal:compilebuiltincsx"];
-
-            string importPostCSXPath = configuration["universal:importpostcsx"];
-            string compilePostCSXString = configuration["universal:compilepostcsx"];
-
-            string supportedHashVersion = configuration["gamespecific:supportedhashversion"];
-            string autoGameStartString = configuration["universal:autogamestart"];
-            string gameExecutable = configuration["gamespecific:gameexecutable"];
-
-            bool compilePreCSX = bool.Parse(compilePreCSXString);
-            bool compileBuiltInCSX = bool.Parse(compileBuiltInCSXString);
-            bool compilePostCSX = bool.Parse(compilePostCSXString);
-
-            bool autoGameStart = bool.Parse(autoGameStartString);
+            //Variables that doesn't have a type can be accessed by CSX scripts.
             ulong currentHash = 0;
+            bool autoGameStart = config.AutoGameStart;
+            string gameExecutable = config.GameExecutable;
+            string supportedHashVersion = config.SupportedDataHash;
+            string importPreCSXPath = config.ImportPreCSX;
+            string importBuiltInCSXPath = config.ImportBuiltinCSX;
+            string importPostCSXPath = config.ImportPostCSX;
+            string importAfterCSXPath = config.ImportAfterCSX;
+            bool compilePreCSX = config.CompilePreCSX;
+            bool compileBuiltInCSX = config.CompileBuiltinCSX;
+            bool compilePostCSX = config.CompilePostCSX;
+            bool compileAfterCSX = config.CompileAfterCSX;
+            compileGML = config.CompileGML;
+            compileASM = config.CompileASM;
+            string backupDataPath = config.BackupData;
+            string gameDataPath = config.GameData;
+            modsPath = config.ModsDirectory;
+            texturesPath = config.TexturesDirectory;
+            shaderPath = config.ShaderDirectory;
+            configPath = config.ConfigDirectory;
+            gmlCodePath = config.GMLCodeDirectory;
+            collisionPath = config.CollisionDirectory;
+            asmPath = config.ASMDirectory;
+            appendGMLPath = config.AppendGMLDirectory;
+            appendGMLCollisionPath = config.AppendGMLCollisionDirectory;
+            newObjectPath = config.NewObjectDirectory;
+            existingObjectPath = config.ExistingObjectDirectory;
+
+            defaultSpriteX = config.DefaultSpriteX;
+            defaultSpriteY = config.DefaultSpriteY;
+            defaultSpriteSpeedType = config.DefaultSpriteSpeedType;
+            defaultSpriteFrameSpeed = config.DefaultSpriteFrameSpeed;
+            defaultSpriteBoundingBoxType = config.DefaultSpriteBoundingBoxType;
+            defaultSpriteBoundingBoxLeft = config.DefaultSpriteBoundingBoxLeft;
+            defaultSpriteBoundingBoxRight = config.DefaultSpriteBoundingBoxRight;
+            defaultSpriteBoundingBoxBottom = config.DefaultSpriteBoundingBoxBottom;
+            defaultSpriteBoundingBoxTop = config.DefaultSpriteBoundingBoxTop;
+            defaultSpriteSepMasksType = config.DefaultSpriteSepMasksType;
+            defaultSpriteTransparent = config.DefaultSpriteTransparent;
+            defaultSpriteSmooth = config.DefaultSpriteSmooth;
+            defaultSpritePreload = config.DefaultSpritePreload;
+            defaultSpriteSpecialVer = config.DefaultSpriteSpecialVer;
+
+            defaultBGTransparent = config.DefaultBGTransparent;
+            defaultBGSmooth = config.DefaultBGSmooth;
+            defaultBGPreload = config.DefaultBGPreload;
+            defaultBGTileWidth = config.DefaultBGTileWidth;
+            defaultBGTileHeight = config.DefaultBGTileHeight;
+            defaultBGBorderX = config.DefaultBGBorderX;
+            defaultBGBorderY = config.DefaultBGBorderY;
+            defaultBGTileColumn = config.DefaultBGTileColumn;
+            defaultBGItemOrFramePerTile = config.DefaultBGItemOrFramePerTile;
+            defaultBGTileCount = config.DefaultBGTileCount;
+            defaultBGFrameTime = config.DefaultBGFrameTime;
             #endregion
+
             mkDir(modsPath);
             mkDir(importPreCSXPath);
             mkDir(importBuiltInCSXPath);
             mkDir(importPostCSXPath);
+            mkDir(importAfterCSXPath);
 
             string modsPathAbsoluteDir = Path.GetFullPath(modsPath);
             if (Directory.Exists(modsPath))
@@ -100,20 +228,21 @@ public class GMLoaderProgram
             string[] dirPreCSXFiles = Directory.GetFiles(importPreCSXPath, "*.csx");
             string[] dirBuiltInCSXFiles = Directory.GetFiles(importBuiltInCSXPath, "*.csx");
             string[] dirPostCSXFiles = Directory.GetFiles(importPostCSXPath, "*.csx");
+            string[] dirAfterCSXFiles = Directory.GetFiles(importAfterCSXPath, "*.csx");
 
             if (!compilePreCSX && !compileBuiltInCSX && !compilePostCSX)
             {
-                Log.Information("What's the point of using GMLoader if you disable CSX COMPILING AAAAAAAAAAAAAAAAA \n\n\nPress any key to close...");
+                Log.Information("Bruh. \n\n\nPress any key to close...");
                 Console.ReadKey();
                 Environment.Exit(0);
             }
-            else if (dirBuiltInCSXFiles.Length == 0 && dirPreCSXFiles.Length == 0 && dirPostCSXFiles.Length == 0)
+            else if (dirBuiltInCSXFiles.Length == 0 && dirPreCSXFiles.Length == 0 && dirPostCSXFiles.Length == 0 && dirAfterCSXFiles.Length == 0)
             {
                 Log.Information($"The CSX Script folder path is empty.\nAborting the process\n\n\nPress any key to close...");
                 Console.ReadKey();
                 Environment.Exit(0);
             }
-            else if (!dirBuiltInCSXFiles.Any(x => x.EndsWith(".csx")) && !dirPreCSXFiles.Any(x => x.EndsWith(".csx")) && !dirPostCSXFiles.Any(x => x.EndsWith(".csx")))
+            else if (!dirBuiltInCSXFiles.Any(x => x.EndsWith(".csx")) && !dirPreCSXFiles.Any(x => x.EndsWith(".csx")) && !dirPostCSXFiles.Any(x => x.EndsWith(".csx")) && !dirAfterCSXFiles.Any(x => x.EndsWith(".csx")))
             {
                 Log.Information($"No CSX Script file found in the csx directory.\nAborting the process\n\n\nPress any key to close...");
                 Console.ReadKey();
@@ -128,7 +257,7 @@ public class GMLoaderProgram
             }
 
             Data = new UndertaleData();
-            if (File.Exists(backupDataPath) && supportedHashVersion == currentHash.ToString())
+            if (File.Exists(backupDataPath) && supportedHashVersion == currentHash.ToString()) //fewer instruction to convert them to string rather than using integer
             {
                 using (var stream = new FileStream(backupDataPath, FileMode.Open, FileAccess.ReadWrite))
                     Data = UndertaleIO.Read(stream);
@@ -232,6 +361,31 @@ public class GMLoaderProgram
             Log.Information("Recompiling the data...");
             using (var stream = new FileStream(gameDataPath, FileMode.Create, FileAccess.ReadWrite))
                 UndertaleIO.Write(stream, Data);
+
+
+            if (dirAfterCSXFiles.Length != 0)
+            {
+                if (compileAfterCSX)
+                {
+                    Log.Information("Loading CSX Scripts after compilation.");
+                    foreach (string file in dirAfterCSXFiles)
+                    {
+                        RunCSharpFile(file);
+                    }
+                }
+                else
+                {
+                    Log.Information("Loading after-CSX script is disabled, skipping the process.");
+                }
+            }
+            else if (compileAfterCSX)
+            {
+                Log.Debug($"The post-CSX folder is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importAfterCSXPath))} , skipping the process.");
+            }
+            else if (compileAfterCSX && !dirAfterCSXFiles.Any(x => x.EndsWith(".csx")))
+            {
+                Log.Debug($"No post-CSX script file found At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importAfterCSXPath))} , skipping the process.");
+            }
 
             if (autoGameStart)
             {
@@ -363,8 +517,8 @@ public class GMLoaderProgram
         {
             typeof(UndertaleObject).Assembly,
             typeof(GMLoader.GMLoaderProgram).Assembly,
-            typeof(ConfigurationBuilder).Assembly,
-            typeof(IniConfigurationSource).Assembly,
+            typeof(ImageMagick.Drawing.DrawableAlpha).Assembly,
+            typeof(System.Drawing.Imaging.PixelFormat).Assembly,
             typeof(Newtonsoft.Json.Linq.JObject).Assembly,
             typeof(System.Text.Json.JsonSerializer).Assembly
         };
@@ -373,10 +527,10 @@ public class GMLoaderProgram
             .WithReferences(references)
             .AddImports("UndertaleModLib", "UndertaleModLib.Models", "UndertaleModLib.Decompiler",
                 "UndertaleModLib.Scripting", "UndertaleModLib.Compiler",
-                "UndertaleModLib.Util", "GMLoader", "GMLoader.GMLoaderProgram", "Serilog", "System", "System.Linq", 
+                "UndertaleModLib.Util", "GMLoader", "GMLoader.GMLoaderProgram", "ImageMagick", "Serilog", "System", "System.Linq", 
                 "System.IO", "System.Collections.Generic", "System.Drawing", "System.Drawing.Imaging", 
                 "System.Collections", "System.Text.RegularExpressions", "System.Text.Json", "System.Diagnostics",
-                "System.Threading", "System.Threading.Tasks", "Microsoft.Extensions.Configuration", "Newtonsoft.Json.Linq")
+                "System.Threading", "System.Threading.Tasks", "Newtonsoft.Json.Linq")
             // "WithEmitDebugInformation(true)" not only lets us to see a script line number which threw an exception,
             // but also provides other useful debug info when we run UMT in "Debug".
             .WithEmitDebugInformation(true);
