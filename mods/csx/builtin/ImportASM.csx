@@ -526,26 +526,17 @@ void EnsureDataLoaded()
         throw new ScriptException("No data file is currently loaded!");
 }
 
-IConfiguration configuration = new ConfigurationBuilder()
-    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-    .AddIniFile("GMLoader.ini", optional: false, reloadOnChange: false)
-    .Build();
-
-string compileASMString = configuration["universal:compileasm"];
-bool compileASM = bool.Parse(compileASMString);
-
-string modDir = "./mods/code/asm";
-mkDir(modDir);
-string[] dirFiles = Directory.GetFiles(modDir, "*.asm");
+mkDir(asmPath);
+string[] dirFiles = Directory.GetFiles(asmPath, "*.asm");
 
 if (!compileASM)
 {
-    Log.Debug("ASM compiling is disabled, skipping the process.");
+    Log.Information("ASM compiling is disabled, skipping the process.");
     return;
 }
 else if (dirFiles.Length == 0)
 {
-    Log.Debug("The ASM import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, modDir)) + " , skipping the process");
+    Log.Debug("The ASM import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, asmPath)) + " , skipping the process");
     return;
 }
 else if (!dirFiles.Any(x => x.EndsWith(".asm")))

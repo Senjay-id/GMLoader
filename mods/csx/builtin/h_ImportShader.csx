@@ -4,14 +4,13 @@ void EnsureDataLoaded()
         throw new ScriptException("No data file is currently loaded!");
 }
 
-string shaderDir = "./mods/shader";
-mkDir(shaderDir);
+mkDir(shaderPath);
 
-string[] directories = Directory.GetDirectories(shaderDir);
+string[] directories = Directory.GetDirectories(shaderPath);
 
 if (directories.Length == 0)
 {
-    Log.Debug("The shader import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, shaderDir)) + " , skipping the process");
+    Log.Debug("The shader import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, shaderPath)) + " , skipping the process");
     return;
 }
 
@@ -21,13 +20,13 @@ List<string> shadersExisting = new List<string>();
 List<string> shadersNonExist = new List<string>();
 List<string> currentList = new List<string>();
 
-var shadersToModify = Directory.GetDirectories(shaderDir).Select(x => Path.GetFileName(x));
+var shadersToModify = Directory.GetDirectories(shaderPath).Select(x => Path.GetFileName(x));
 
 string res = "";
 
 foreach (string directory in directories)
 {
-    Log.Information($"Importing Shader {Path.GetRelativePath(shaderDir, directory)}");
+    Log.Information($"Importing Shader {Path.GetRelativePath(shaderPath, directory)}");
 
     foreach (string shaderName in shadersToModify)
     {
@@ -51,7 +50,7 @@ foreach (string directory in directories)
 
 void ImportShader(UndertaleShader existing_shader)
 {
-    string localImportDir = shaderDir + "/" + existing_shader.Name.Content + "/";
+    string localImportDir = shaderPath + "/" + existing_shader.Name.Content + "/";
     if (File.Exists(localImportDir + "Type.txt"))
     {
         string shader_type = File.ReadAllText(localImportDir + "Type.txt");
@@ -160,7 +159,7 @@ void AddShader(string shader_name)
 {
     UndertaleShader new_shader = new UndertaleShader();
     new_shader.Name = Data.Strings.MakeString(shader_name);
-    string localImportDir = shaderDir + "/" + shader_name + "/";
+    string localImportDir = shaderPath + "/" + shader_name + "/";
     if (File.Exists(localImportDir + "Type.txt"))
     {
         string shader_type = File.ReadAllText(localImportDir + "Type.txt");

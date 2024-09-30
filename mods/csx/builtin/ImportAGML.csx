@@ -526,19 +526,11 @@ void EnsureDataLoaded()
         throw new ScriptException("No data file is currently loaded!");
 }
 
-IConfiguration configuration = new ConfigurationBuilder()
-    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-    .AddIniFile("GMLoader.ini", optional: false, reloadOnChange: false)
-    .Build();
-
-string compileGMLString = configuration["universal:compilegml"];
-bool compileGML = bool.Parse(compileGMLString);
 bool hasGML = true;
 bool hasCollisionGML = true;
 
-string modDir = "./mods/code";
-mkDir(modDir);
-string[] dirFiles = Directory.GetFiles(modDir, "*.gml");
+mkDir(gmlCodePath);
+string[] dirFiles = Directory.GetFiles(gmlCodePath, "*.gml");
 
 if (!compileGML)
 {
@@ -547,7 +539,7 @@ if (!compileGML)
 }
 else if (dirFiles.Length == 0)
 {
-    Log.Debug("The GML import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, modDir)) + " , skipping the process");
+    Log.Debug("The GML import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, gmlCodePath)) + " , skipping the process");
     hasGML = false;
 }
 else if (!dirFiles.Any(x => x.EndsWith(".gml")))
@@ -567,13 +559,12 @@ if (hasGML)
     }
 }
 
-string collisionDir = "./mods/code/collision";
-mkDir(collisionDir);
-string[] collisionFiles = Directory.GetFiles(collisionDir, "*.gml");
+mkDir(collisionPath);
+string[] collisionFiles = Directory.GetFiles(collisionPath, "*.gml");
 
 if (collisionFiles.Length == 0)
 {
-    Log.Debug("The collision import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, collisionDir)) + " , skipping the process");
+    Log.Debug("The collision import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, collisionPath)) + " , skipping the process");
     hasCollisionGML = false;
 }
 else if (!collisionFiles.Any(x => x.EndsWith(".gml")))

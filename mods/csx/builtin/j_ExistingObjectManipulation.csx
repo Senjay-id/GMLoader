@@ -1,10 +1,9 @@
-string configDir = "./mods/config/existing_object";
-mkDir(configDir);
-string[] objFiles = Directory.GetFiles(configDir, "*.json");
+mkDir(existingObjectPath);
+string[] objFiles = Directory.GetFiles(existingObjectPath, "*.json");
 
 if (objFiles.Length == 0)
 {
-    Log.Debug("The config import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, configDir)) + " , skipping the process");
+    Log.Debug("The config import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, existingObjectPath)) + " , skipping the process");
     return;
 }
 else if (!objFiles.Any(x => x.EndsWith(".json")))

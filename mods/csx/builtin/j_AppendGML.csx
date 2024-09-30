@@ -4,28 +4,20 @@ void EnsureDataLoaded()
         throw new ScriptException("No data file is currently loaded!");
 }
 
-IConfiguration configuration = new ConfigurationBuilder()
-    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-    .AddIniFile("GMLoader.ini", optional: false, reloadOnChange: false)
-    .Build();
-
-string compileGMLString = configuration["universal:compilegml"];
-bool compileGML = bool.Parse(compileGMLString);
 bool hasGML = true;
 bool hasCollisionGML = true;
 
-string modDir = "./mods/code/appendgml";
-mkDir(modDir);
-string[] directories = Directory.GetDirectories(modDir);
+mkDir(appendGMLPath);
+string[] directories = Directory.GetDirectories(appendGMLPath);
 
 if (!compileGML)
 {
-    Log.Debug("GML compiling is disabled, skipping the process.");
+    Log.Information("GML compiling is disabled, skipping the process.");
     return;
 }
 else if (directories.Length == 0)
 {
-    Log.Debug("The appendGML import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, modDir)) + " , skipping the process");
+    Log.Debug("The appendGML import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, appendGMLPath)) + " , skipping the process");
     hasGML = false;
 }
 
@@ -39,20 +31,19 @@ if (hasGML)
 
         foreach (string file in dirFiles)
         {
-            Log.Information($"Appending {Path.GetFileName(file)} from {Path.GetRelativePath(modDir, directory)} Folder");
+            Log.Information($"Appending {Path.GetFileName(file)} from {Path.GetRelativePath(appendGMLPath, directory)} Folder");
             Data.Code.ByName(Path.GetFileNameWithoutExtension(file)).AppendGML(File.ReadAllText(file), Data);
         }
     }
 }
 
 //collision handling
-string collisionDir = "./mods/code/appendgml/collision";
-mkDir(collisionDir);
-string[] collisionDirectories = Directory.GetDirectories(collisionDir);
+mkDir(appendGMLCollisionPath);
+string[] collisionDirectories = Directory.GetDirectories(appendGMLCollisionPath);
 
 if (collisionDirectories.Length == 0)
 {
-    Log.Debug("The collision import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, collisionDir)) + " , skipping the process");
+    Log.Debug("The collision import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, appendGMLCollisionPath)) + " , skipping the process");
     hasCollisionGML = false;
 }
 
@@ -64,7 +55,7 @@ if (hasCollisionGML)
 
         foreach (string file in collisionFiles)
         {
-            Log.Information($"Appending {Path.GetFileName(file)} from {Path.GetRelativePath(collisionDir, directory)} Folder");
+            Log.Information($"Appending {Path.GetFileName(file)} from {Path.GetRelativePath(appendGMLCollisionPath, directory)} Folder");
             var filename = Path.GetFileName(file);
 
             int startIdx = filename.IndexOf("Object_") + "Object_".Length;
