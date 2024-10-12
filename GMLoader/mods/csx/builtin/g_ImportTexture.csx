@@ -71,7 +71,6 @@ uint specialVer = DefaultSpriteSpecialVer;
 Regex regex = new Regex(@"(?<=_f)(\d+)|(?<=_x)(-?\d+)|(?<=_y)(-?\d+)|(?<=_st)(\d+)|(?<=_s)(\d+)|(?<=_b)(\d+)|(?<=_left)(-?\d+)|(?<=_right)(-?\d+)|(?<=_bot)(-?\d+)|(?<=_top)(-?\d+)", RegexOptions.Compiled);
 Regex stripStyleFrameRegex = new(@"^(.+?)(?:_(\d+))$", RegexOptions.Compiled);
 
-
 //Default Background/Tiles values
 bool bgTransparent = DefaultBGTransparent;
 bool bgSmooth = DefaultBGSmooth;

@@ -17,6 +17,8 @@ if (coreCount == 0)
 var options = new ParallelOptions { MaxDegreeOfParallelism = coreCount }; // Adjust the degree of parallelism
 Log.Information($"Using {coreCount} cores to dump the objects");
 
+Directory.CreateDirectory(exportGameObjectOutputPath);
+
 Parallel.ForEach(Data.GameObjects, options, dumpObject);
 
 void dumpObject(UndertaleGameObject obj)

@@ -22,6 +22,7 @@ using Serilog.Events;
 using Config.Net;
 using ImageMagick;
 using Newtonsoft.Json;
+using xdelta3.net;
 #endregion
 
 namespace GMLoader;
@@ -33,6 +34,9 @@ public interface IConfig
     public bool ExportCode { get; }
     public bool ExportGameObject { get; }
     public bool ExportTexture { get; }
+    public bool ExportAudio { get; }
+    public string ExportAudioScriptPath { get; }
+    public string ExportAudioOutputPath { get; }
     public string ExportTextureScriptPath { get; }
     public string ExportTextureOutputPath { get; }
     public string ExportGameObjectScriptPath { get; }
@@ -96,13 +100,23 @@ public class GMLoaderProgram
     #region Properties
     public static UndertaleData Data { get; set; }
     private static ScriptOptions CliScriptOptions { get; set; }
+    public static string gameDataPath { get; set; }
     public static string modsPath { get; set; }
-    public static bool exportCode { get; set; }
-    public static bool exportGameObject { get; set; }
-    public static bool exportTexture { get; set; }
+    //public static bool exportCode { get; set; }
+    //public static bool exportGameObject { get; set; }
+    //public static bool exportTexture { get; set; }
     public static string exportTextureOutputPath { get; set; }
+    public static string exportAudioOutputPath { get; set; }
     public static string exportGameObjectOutputPath { get; set; }
     public static string exportCodeOutputPath { get; set; }
+    public static List<string> invalidCodeNames { get; set; }
+    public static int invalidCode { get; set; }
+    public static List<string> invalidSpriteNames { get; set; }
+    public static int invalidSprite { get; set; }
+    public static List<string> invalidSpriteSizeNames { get; set; }
+    public static int invalidXdelta { get; set; }
+    public static List<string> invalidXdeltaNames { get; set; }
+    public static int invalidSpriteSize { get; set; }
     public static string texturesPath { get; set; }
     public static string shaderPath { get; set; }
     public static string configPath { get; set; }
@@ -149,6 +163,7 @@ public class GMLoaderProgram
     {
         try
         {
+
             if (File.Exists("GMLoader.log"))
                 File.Delete("GMLoader.log");
 
@@ -176,15 +191,18 @@ public class GMLoaderProgram
             ulong currentHash = 0;
             bool autoGameStart = config.AutoGameStart;
             bool exportMode = config.ExportMode;
-            string exportTextureScriptPath = config.ExportTextureScriptPath;
-            string exportGameObjectScriptPath = config.ExportGameObjectScriptPath;
-            string exportCodeScriptPath = config.ExportCodeScriptPath;
-            string exportDataPath = config.ExportDataPath;
             bool exportCode = config.ExportCode;
             bool exportGameObject = config.ExportGameObject;
             bool exportTexture = config.ExportTexture;
+            bool exportAudio = config.ExportAudio;
+            string exportDataPath = config.ExportDataPath;
+            string exportTextureScriptPath = config.ExportTextureScriptPath;
+            string exportAudioScriptPath = config.ExportAudioScriptPath;
+            string exportGameObjectScriptPath = config.ExportGameObjectScriptPath;
+            string exportCodeScriptPath = config.ExportCodeScriptPath;
             exportGameObjectOutputPath = config.ExportGameObjectOutputPath;
             exportTextureOutputPath = config.ExportTextureOutputPath;
+            exportAudioOutputPath = config.ExportAudioOutputPath;
             exportCodeOutputPath = config.ExportCodeOutputPath;
             string gameExecutable = config.GameExecutable;
             string supportedHashVersion = config.SupportedDataHash;
@@ -199,7 +217,7 @@ public class GMLoaderProgram
             compileGML = config.CompileGML;
             compileASM = config.CompileASM;
             string backupDataPath = config.BackupData;
-            string gameDataPath = config.GameData;
+            gameDataPath = config.GameData;
             modsPath = config.ModsDirectory;
             texturesPath = config.TexturesDirectory;
             shaderPath = config.ShaderDirectory;
@@ -241,6 +259,7 @@ public class GMLoaderProgram
             #endregion
 
             mkDir(modsPath);
+            mkDir(texturesPath);
             mkDir(importPreCSXPath);
             mkDir(importBuiltInCSXPath);
             mkDir(importPostCSXPath);
@@ -282,20 +301,20 @@ public class GMLoaderProgram
             {
                 Console.Title = $"GMLoader  - Export Mode";
 
-                if (!File.Exists(exportTextureScriptPath) || !File.Exists(exportGameObjectScriptPath) || !File.Exists(exportCodeScriptPath))
+                if (!File.Exists(exportTextureScriptPath) || !File.Exists(exportGameObjectScriptPath) || !File.Exists(exportCodeScriptPath) || !File.Exists(exportAudioScriptPath))
                 {
                     Log.Error("Missing exporter script");
                     Console.ReadKey();
                     Environment.Exit(0);
                 }
 
-                while (Directory.Exists(exportGameObjectOutputPath) || Directory.Exists(exportTextureOutputPath) || Directory.Exists(exportCodeOutputPath))
+                while (Directory.Exists(exportGameObjectOutputPath) || Directory.Exists(exportTextureOutputPath) || Directory.Exists(exportCodeOutputPath) || Directory.Exists(exportAudioOutputPath))
                 {
                     Log.Information("Please delete the Export folder before exporting.\n\nPress any key to continue..");
                     Console.ReadKey();
                     Environment.Exit(0);
                 }
-
+                
                 Log.Information($"Reading game data from {Path.GetFileName(exportDataPath)}");
                 Data = new UndertaleData();
                 using (var stream = new FileStream(exportDataPath, FileMode.Open, FileAccess.ReadWrite))
@@ -306,18 +325,50 @@ public class GMLoaderProgram
 
                 ScriptOptionsInitialize();
 
+                invalidCodeNames = new List<string>();
+                invalidCode = 0;
+
+                invalidSpriteNames = new List<string>();
+                invalidSprite = 0;
+
+                invalidSpriteSizeNames = new List<string>();
+                invalidSpriteSize = 0;
+
                 if (exportGameObject)
                     await RunCSharpFile(exportGameObjectScriptPath);
                 if (exportCode)
                     await RunCSharpFile(exportCodeScriptPath);
                 if (exportTexture)
                     await RunCSharpFile(exportTextureScriptPath);
+                if (exportAudio)
+                    await RunCSharpFile(exportAudioScriptPath);
 
-                if (!exportGameObject && !exportCode && !exportTexture)
+                if (!exportGameObject && !exportCode && !exportTexture && !exportAudio)
                 {
                     Log.Information("No export option enabled??");
                     Console.ReadKey();
                     Environment.Exit(0);
+                }
+
+                if (invalidCode > 0)
+                {
+                    Log.Information("");
+                    Log.Error("Error, Failed to decompile the code below:");
+                    foreach (string name in invalidCodeNames)
+                    {
+                        Log.Error(name);
+                    }
+                    Log.Information("");
+                }
+                if (invalidSpriteSize > 0)
+                {
+                    Log.Information("");
+                    Log.Error("Error, the sprite below has invalid height or width:");
+                    foreach (var name in invalidSpriteSizeNames)
+                    {
+                        Log.Error(name);
+                    }
+                    Log.Information("");
                 }
 
                 Log.Information("Export done. Press any key to close...");
@@ -357,7 +408,8 @@ public class GMLoaderProgram
 
             //CSX Handling
             ScriptOptionsInitialize();
-
+            invalidXdeltaNames = new List<string>();
+            invalidXdelta = 0;
             //Compile users script before builtin scripts
             if (dirPreCSXFiles.Length != 0)
             {
@@ -462,6 +514,17 @@ public class GMLoaderProgram
                 Log.Debug($"No post-CSX script file found At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importAfterCSXPath))} , skipping the process.");
             }
 
+            if (invalidXdelta > 0)
+            {
+                Log.Information("");
+                Log.Error("Error, Failed to xdelta patch the files below:");
+                foreach (string name in invalidXdeltaNames)
+                {
+                    Log.Error(name);
+                }
+                Log.Information("");
+            }
+
             if (autoGameStart)
             {
                 Log.Information("Game Data has been recompiled, Launching the game...");
@@ -541,15 +604,24 @@ public class GMLoaderProgram
             PrintFileTree(directories[i], newIndent, lastDir);
         }
     }
-
-    public static async Task DeleteDirAsync(string path)
+    public static void makeDeltaPatch(string sourceFilePath, string modifiedFilePath, string patchFilePath)
     {
-        if (Directory.Exists(path))
-        {
-            await Task.Run(() => Directory.Delete(path, true));
-        }
+        byte[] originalData = File.ReadAllBytes(sourceFilePath);
+        byte[] modifiedData = File.ReadAllBytes(modifiedFilePath);
+
+        var delta = Xdelta3Lib.Encode(source: originalData, target: modifiedData).ToArray();
+
+        File.WriteAllBytes(patchFilePath, delta);
     }
 
+    public static void applyDeltaPatch(string sourceFilePath, string patchFilePath, string outputFilePath)
+    {
+        byte[] originalData = File.ReadAllBytes(sourceFilePath);
+        byte[] delta = File.ReadAllBytes(patchFilePath);
+
+        var recreatedData = Xdelta3Lib.Decode(source: originalData, delta: delta).ToArray();
+        File.WriteAllBytes(outputFilePath, recreatedData);
+    }
     #endregion
 
     #region Script Handling
@@ -619,12 +691,16 @@ public class GMLoaderProgram
 
         CliScriptOptions = ScriptOptions.Default
             .WithReferences(references)
-            .AddImports("UndertaleModLib", "UndertaleModLib.Models", "UndertaleModLib.Decompiler",
+            .AddImports(
+                "UndertaleModLib", "UndertaleModLib.Models", "UndertaleModLib.Decompiler",
                 "UndertaleModLib.Scripting", "UndertaleModLib.Compiler",
-                "UndertaleModLib.Util", "GMLoader", "GMLoader.GMLoaderProgram", "ImageMagick", "Serilog", "System", "System.Linq", 
-                "System.IO", "System.Collections.Generic", "System.Drawing", "System.Drawing.Imaging", 
-                "System.Collections", "System.Text.RegularExpressions", "System.Text.Json", "System.Diagnostics",
-                "System.Threading", "System.Threading.Tasks", "Newtonsoft.Json", "Newtonsoft.Json.Linq")
+                "UndertaleModLib.Util", "GMLoader", "GMLoader.GMLoaderProgram", 
+                "ImageMagick", "Serilog", "xdelta3.net", "System", "System.Linq", 
+                "System.IO", "System.Collections.Generic", "System.Drawing", 
+                "System.Drawing.Imaging", "System.Collections", 
+                "System.Text.RegularExpressions", "System.Text.Json", "System.Diagnostics",
+                "System.Threading", "System.Threading.Tasks", "Newtonsoft.Json", 
+                "Newtonsoft.Json.Linq")
             // "WithEmitDebugInformation(true)" not only lets us to see a script line number which threw an exception,
             // but also provides other useful debug info when we run UMT in "Debug".
             .WithEmitDebugInformation(true);

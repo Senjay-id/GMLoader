@@ -6,6 +6,9 @@ using System.Collections.Concurrent;
 
 class Program
 {
+    public static List<string> invalidFileStreamNames { get; set; }
+    public static int invalidFileStream { get; set; }
+
     [STAThread]
     static void Main()
     {
@@ -28,10 +31,27 @@ class Program
             string secondFolderPath = SelectFolder("Select the modded folder");
             if (string.IsNullOrEmpty(secondFolderPath)) return;
 
-            string outputFolderPath = Path.Combine(Environment.CurrentDirectory, "output");
+            string outputFolderPath = Path.Combine(Environment.CurrentDirectory, "filediff_output");
+            if (Directory.Exists(outputFolderPath))
+                Directory.Delete(outputFolderPath, true);
             mkDir(outputFolderPath);
 
+            invalidFileStreamNames = new List<string>();
+            invalidFileStream = 0;
+
             CompareAndCopyFiles(firstFolderPath, secondFolderPath, outputFolderPath);
+
+            if (invalidFileStream > 0)
+            {
+                Log.Information("");
+                Log.Error("Error, invalid file stream length for the file below:");
+                foreach (string name in invalidFileStreamNames)
+                {
+                    Log.Error(name);
+                }
+                Log.Error("The invalid file stream could be caused by empty file, please check if the file is indeed empty in UMT");
+                Log.Information("");
+            }
 
             Console.WriteLine($"All files have been copied to the output folder at: {outputFolderPath}");
             Console.WriteLine("Press any key to close...");
@@ -122,7 +142,7 @@ class Program
                 if (vanillaHash != modHash)
                 {
                     //Log.Information($"{vanillaFile} and {moddedFile} hash is not equal");
-                    Log.Information($"Copying {moddedFile}");
+                    Log.Information($"File hash is different, Copying {Path.GetFileName(moddedFile)}");
                     mkDir(Path.GetDirectoryName(outputFilePath));
                     File.Copy(moddedFile, outputFilePath, true);
                 }
@@ -148,6 +168,13 @@ class Program
     {
         using (var stream = File.OpenRead(filePath))
         {
+            if (stream.Length == 0)
+            {
+                Log.Error($"Error, {Path.GetFileName(filePath)} stream length is 0");
+                invalidFileStreamNames.Add(Path.GetFileName(filePath));
+                invalidFileStream++;
+                return 0; // or some other default value
+            }
             byte[] fileBytes = new byte[stream.Length];
             stream.Read(fileBytes, 0, (int)stream.Length);
             return xxHash3.ComputeHash(fileBytes, (int)stream.Length, 0);

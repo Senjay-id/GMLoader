@@ -16,7 +16,7 @@ if (coreCount == 0)
     coreCount = 1;
 
 var options = new ParallelOptions { MaxDegreeOfParallelism = coreCount }; // Adjust the degree of parallelism
-Log.Information($"Using {coreCount} cores to dump the objects");
+Log.Information($"Using {coreCount} cores to dump the code");
 
 Directory.CreateDirectory(codeFolder);
 
@@ -34,13 +34,14 @@ if (!exportFromCache)
     }
 }
 
-List<string> invalidCodeNames = new List<string>();
-int invalidCode = 0;
+//List<string> invalidCodeNames = new List<string>();
+//int invalidCode = 0;
 
 bool cacheGenerated = false;
 
 await DumpCode();
 
+/*
 if (invalidCode > 0)
 {
     Log.Error("[Error] Failed to decompile the code below:");
@@ -49,6 +50,7 @@ if (invalidCode > 0)
         Log.Error(name);
     }
 }
+*/
 
 Log.Information("All code has been exported to " + Path.GetFullPath(codeFolder));
 
