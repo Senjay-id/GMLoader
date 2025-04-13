@@ -23,18 +23,25 @@ using Config.Net;
 using ImageMagick;
 using Newtonsoft.Json;
 using xdelta3.net;
+using Underanalyzer.Compiler;
+using Underanalyzer.Decompiler;
+using System.Text;
+using VYaml.Serialization;
+using VYaml.Annotations;
 #endregion
 
 namespace GMLoader;
 public interface IConfig
 {
     public bool AutoGameStart { get; }
+    public bool CheckHash { get; }
     public bool ExportMode { get; }
     public string ExportDataPath { get; }
     public bool ExportCode { get; }
     public bool ExportGameObject { get; }
     public bool ExportTexture { get; }
     public bool ExportAudio { get; }
+    public bool ExportRoom { get; }
     public string ExportAudioScriptPath { get; }
     public string ExportAudioOutputPath { get; }
     public string ExportTextureScriptPath { get; }
@@ -43,6 +50,8 @@ public interface IConfig
     public string ExportGameObjectOutputPath { get; }
     public string ExportCodeScriptPath { get; }
     public string ExportCodeOutputPath { get; }
+    public string ExportRoomScriptPath { get; }
+    public string ExportRoomOutputPath { get; }
     public string GameExecutable { get; }
     public string SupportedDataHash { get; }
     public string ImportPreCSX { get; }
@@ -59,11 +68,13 @@ public interface IConfig
     public string GameData { get; }
     public string ModsDirectory { get; }
     public string TexturesDirectory { get; }
+    public string TexturesConfigDirectory { get; }
     public string ShaderDirectory { get; }
     public string ConfigDirectory { get; }
     public string GMLCodeDirectory { get; }
     public string CollisionDirectory { get; }
     public string ASMDirectory { get; }
+    public string PrependGMLDirectory { get; }
     public string AppendGMLDirectory { get; }
     public string AppendGMLCollisionDirectory { get; }
     public string NewObjectDirectory { get; }
@@ -95,6 +106,52 @@ public interface IConfig
     public int DefaultBGFrameTime { get; }
 }
 
+[YamlObject]
+public partial class SpriteData
+{
+    [YamlMember("frames")]
+    public int? yml_frame { get; set; }  // Nullable int
+
+    [YamlMember("x")]
+    public int? yml_x { get; set; }      // Nullable int
+
+    [YamlMember("y")]
+    public int? yml_y { get; set; }      // Nullable int
+
+    [YamlMember("transparent")]
+    public bool? yml_transparent { get; set; }  // Nullable bool
+
+    [YamlMember("smooth")]
+    public bool? yml_smooth { get; set; }      // Nullable bool
+
+    [YamlMember("preload")]
+    public bool? yml_preload { get; set; }     // Nullable bool
+
+    [YamlMember("speed_type")]
+    public uint? yml_speedtype { get; set; }   // Nullable uint
+
+    [YamlMember("frame_speed")]
+    public float? yml_framespeed { get; set; } // Nullable float
+
+    [YamlMember("bounding_box_type")]
+    public uint? yml_boundingboxtype { get; set; }  // Nullable uint
+
+    [YamlMember("bbox_left")]
+    public int? yml_bboxleft { get; set; }     // Nullable int
+
+    [YamlMember("bbox_right")]
+    public int? yml_bboxright { get; set; }    // Nullable int
+
+    [YamlMember("bbox_bottom")]
+    public int? yml_bboxbottom { get; set; }   // Nullable int
+
+    [YamlMember("bbox_top")]
+    public int? yml_bboxtop { get; set; }     // Nullable int
+
+    [YamlMember("sepmasks")]
+    public uint? yml_sepmask { get; set; }     // Nullable uint
+}
+
 public class GMLoaderProgram
 {
     #region Properties
@@ -109,6 +166,7 @@ public class GMLoaderProgram
     public static string exportAudioOutputPath { get; set; }
     public static string exportGameObjectOutputPath { get; set; }
     public static string exportCodeOutputPath { get; set; }
+    public static string exportRoomOutputPath { get; set; }
     public static List<string> invalidCodeNames { get; set; }
     public static int invalidCode { get; set; }
     public static List<string> invalidSpriteNames { get; set; }
@@ -118,11 +176,13 @@ public class GMLoaderProgram
     public static List<string> invalidXdeltaNames { get; set; }
     public static int invalidSpriteSize { get; set; }
     public static string texturesPath { get; set; }
+    public static string texturesConfigPath { get; set; }
     public static string shaderPath { get; set; }
     public static string configPath { get; set; }
     public static string gmlCodePath { get; set; }
     public static string collisionPath { get; set; }
     public static string asmPath { get; set; }
+    public static string prependGMLPath { get; set; }
     public static string appendGMLPath { get; set; }
     public static string appendGMLCollisionPath { get; set; }
     public static string newObjectPath { get; set; }
@@ -156,6 +216,8 @@ public class GMLoaderProgram
     public static int defaultBGFrameTime { get; set; }
 
     public static List<string> spriteList = new List<string>();
+    public static Dictionary<string, SpriteData> spriteDictionary = new Dictionary<string, SpriteData>();
+    public static string[] spritesToImport;
 
     #endregion
 
@@ -163,9 +225,10 @@ public class GMLoaderProgram
     {
         try
         {
+            Stopwatch stopwatch = Stopwatch.StartNew();
 
             if (File.Exists("GMLoader.log"))
-                File.Delete("GMLoader.log");
+            File.Delete("GMLoader.log");
 
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
@@ -190,20 +253,24 @@ public class GMLoaderProgram
             //Variables that doesn't have a type can be accessed by CSX scripts.
             ulong currentHash = 0;
             bool autoGameStart = config.AutoGameStart;
+            bool checkHash = config.CheckHash;
             bool exportMode = config.ExportMode;
             bool exportCode = config.ExportCode;
             bool exportGameObject = config.ExportGameObject;
             bool exportTexture = config.ExportTexture;
             bool exportAudio = config.ExportAudio;
+            bool exportRoom = config.ExportRoom;
             string exportDataPath = config.ExportDataPath;
             string exportTextureScriptPath = config.ExportTextureScriptPath;
             string exportAudioScriptPath = config.ExportAudioScriptPath;
             string exportGameObjectScriptPath = config.ExportGameObjectScriptPath;
             string exportCodeScriptPath = config.ExportCodeScriptPath;
+            string exportRoomScriptPath = config.ExportRoomScriptPath;
             exportGameObjectOutputPath = config.ExportGameObjectOutputPath;
             exportTextureOutputPath = config.ExportTextureOutputPath;
             exportAudioOutputPath = config.ExportAudioOutputPath;
             exportCodeOutputPath = config.ExportCodeOutputPath;
+            exportRoomOutputPath = config.ExportRoomOutputPath;
             string gameExecutable = config.GameExecutable;
             string supportedHashVersion = config.SupportedDataHash;
             string importPreCSXPath = config.ImportPreCSX;
@@ -220,11 +287,13 @@ public class GMLoaderProgram
             gameDataPath = config.GameData;
             modsPath = config.ModsDirectory;
             texturesPath = config.TexturesDirectory;
+            texturesConfigPath = config.TexturesConfigDirectory;
             shaderPath = config.ShaderDirectory;
             configPath = config.ConfigDirectory;
             gmlCodePath = config.GMLCodeDirectory;
             collisionPath = config.CollisionDirectory;
             asmPath = config.ASMDirectory;
+            prependGMLPath = config.PrependGMLDirectory;
             appendGMLPath = config.AppendGMLDirectory;
             appendGMLCollisionPath = config.AppendGMLCollisionDirectory;
             newObjectPath = config.NewObjectDirectory;
@@ -260,6 +329,7 @@ public class GMLoaderProgram
 
             mkDir(modsPath);
             mkDir(texturesPath);
+            mkDir(texturesConfigPath);
             mkDir(importPreCSXPath);
             mkDir(importBuiltInCSXPath);
             mkDir(importPostCSXPath);
@@ -301,14 +371,18 @@ public class GMLoaderProgram
             {
                 Console.Title = $"GMLoader  - Export Mode";
 
-                if (!File.Exists(exportTextureScriptPath) || !File.Exists(exportGameObjectScriptPath) || !File.Exists(exportCodeScriptPath) || !File.Exists(exportAudioScriptPath))
+                if (!File.Exists(exportTextureScriptPath) || !File.Exists(exportGameObjectScriptPath) || 
+                    !File.Exists(exportCodeScriptPath) || !File.Exists(exportAudioScriptPath) || 
+                    !File.Exists(exportRoomScriptPath))
                 {
                     Log.Error("Missing exporter script");
                     Console.ReadKey();
                     Environment.Exit(0);
                 }
 
-                while (Directory.Exists(exportGameObjectOutputPath) || Directory.Exists(exportTextureOutputPath) || Directory.Exists(exportCodeOutputPath) || Directory.Exists(exportAudioOutputPath))
+                while (Directory.Exists(exportGameObjectOutputPath) || Directory.Exists(exportTextureOutputPath) || 
+                    Directory.Exists(exportCodeOutputPath) || Directory.Exists(exportAudioOutputPath) || 
+                    Directory.Exists(exportRoomOutputPath))
                 {
                     Log.Information("Please delete the Export folder before exporting.\n\nPress any key to continue..");
                     Console.ReadKey();
@@ -336,14 +410,16 @@ public class GMLoaderProgram
 
                 if (exportGameObject)
                     await RunCSharpFile(exportGameObjectScriptPath);
+                if (exportAudio)
+                    await RunCSharpFile(exportAudioScriptPath);
                 if (exportCode)
                     await RunCSharpFile(exportCodeScriptPath);
                 if (exportTexture)
                     await RunCSharpFile(exportTextureScriptPath);
-                if (exportAudio)
-                    await RunCSharpFile(exportAudioScriptPath);
+                if (exportRoom)
+                    await RunCSharpFile(exportRoomScriptPath);
 
-                if (!exportGameObject && !exportCode && !exportTexture && !exportAudio)
+                if (!exportGameObject && !exportCode && !exportTexture && !exportAudio && !exportRoom)
                 {
                     Log.Information("No export option enabled??");
                     Console.ReadKey();
@@ -375,7 +451,6 @@ public class GMLoaderProgram
                 Console.ReadKey();
                 Environment.Exit(0);
             }
-
             if (File.Exists(backupDataPath))
             {
                 currentHash = ComputeFileHash3(backupDataPath);
@@ -388,7 +463,7 @@ public class GMLoaderProgram
                 using (var stream = new FileStream(backupDataPath, FileMode.Open, FileAccess.ReadWrite))
                     Data = UndertaleIO.Read(stream);
             }
-            else if (File.Exists(backupDataPath) && supportedHashVersion != currentHash.ToString())
+            else if (File.Exists(backupDataPath) && supportedHashVersion != currentHash.ToString() && checkHash)
             {
                 Log.Information("\nGame Data Hash Mismatch Error.\nThis happens because modloader is outdated or the data.win is modified.\n\nDelete backup.win and verify the integrity of game.\n\nIf your using MO2, check the overwrite folder and delete backup.win\n\n\nPress any key to close...");
                 Console.ReadKey();
@@ -441,6 +516,8 @@ public class GMLoaderProgram
                 if (compileBuiltInCSX)
                 {
                     Log.Information("Loading builtin-CSX scripts.");
+                    // Had to be done on GMLoader's side because of VYaml issues
+                    await importGraphic();
                     foreach (string file in dirBuiltInCSXFiles)
                     {
                         await RunCSharpFile(file);
@@ -525,16 +602,18 @@ public class GMLoaderProgram
                 Log.Information("");
             }
 
+            stopwatch.Stop();
+
             if (autoGameStart)
             {
-                Log.Information("Game Data has been recompiled, Launching the game...");
+                Log.Information($"Game Data has been recompiled, Launching the game...\n\nElapsed time: {stopwatch.Elapsed.TotalSeconds:F2} seconds ({stopwatch.ElapsedMilliseconds} ms)");
                 Process.Start(gameExecutable);
                 Thread.Sleep(3000);
                 Environment.Exit(0);
             }
             else
             {
-                Log.Information("Game Data has been recompiled, you can now launch the modded data through the game executable.\n\n\nPress any key to close...");
+                Log.Information($"Game Data has been recompiled, you can now launch the modded data through the game executable.\n\nElapsed time: {stopwatch.Elapsed.TotalSeconds:F2} seconds ({stopwatch.ElapsedMilliseconds} ms)\n\n\nPress any key to close...");
                 Console.ReadKey();
                 Environment.Exit(0);
             }
@@ -545,6 +624,51 @@ public class GMLoaderProgram
             Console.WriteLine("Press any key to close...");
             Console.ReadKey();
         }
+    }
+
+    private static async Task importGraphic()
+    {
+        Log.Information("Executing built-in ImportGraphic");
+        spriteDictionary.Clear();
+        spriteList.Clear();
+        Dictionary<string, SpriteData> spriteParameters = new();
+        string[] spriteConfigFIles = Directory.GetFiles(texturesConfigPath, "*.yaml*", SearchOption.TopDirectoryOnly);
+        List<string> spriteFilenames = new List<string>();
+        string pngExt = ".png";
+
+        Log.Information("Deserializing sprite configuration files, please close GMLoader if it takes more than 5 second for a config file.");
+        Console.Title = $"GMLoader - Deserializing sprite configuration files, please close GMLoader if it takes more than 5 second for a config file";
+        foreach (string file in spriteConfigFIles)
+        {
+            byte[] yamlBytes = File.ReadAllBytes(file);
+            Log.Information($"Deserializing {Path.GetFileName(file)}");
+            var deserialized = YamlSerializer.Deserialize<Dictionary<string, SpriteData>>(yamlBytes);
+            foreach (var (spritename, configs) in deserialized)
+            {
+                spriteFilenames.Add(spritename + pngExt);
+                spriteList.Add(spritename);
+
+                spriteDictionary[spritename] = new SpriteData
+                {
+                    yml_frame = configs.yml_frame ?? 1,
+                    yml_x = configs.yml_x ?? defaultSpriteX,
+                    yml_y = configs.yml_y ?? defaultSpriteY,
+                    yml_transparent = configs.yml_transparent ?? defaultSpriteTransparent,
+                    yml_smooth = configs.yml_smooth ?? defaultSpriteSmooth,
+                    yml_preload = configs.yml_preload ?? defaultSpritePreload,
+                    yml_speedtype = configs.yml_speedtype ?? defaultSpriteSpeedType,
+                    yml_framespeed = configs.yml_framespeed ?? defaultSpriteFrameSpeed,
+                    yml_boundingboxtype = configs.yml_boundingboxtype ?? defaultSpriteBoundingBoxType,
+                    yml_bboxleft = configs.yml_bboxleft ?? defaultSpriteBoundingBoxLeft,
+                    yml_bboxright = configs.yml_bboxright ?? defaultSpriteBoundingBoxRight,
+                    yml_bboxbottom = configs.yml_bboxbottom ?? defaultSpriteBoundingBoxBottom,
+                    yml_bboxtop = configs.yml_bboxtop ?? defaultSpriteBoundingBoxTop,
+                    yml_sepmask = configs.yml_sepmask ?? defaultSpriteSepMasksType
+                };
+            }
+        }
+        spritesToImport = spriteFilenames.ToArray();
+        Console.Title = $"GMLoader  -  {Data.GeneralInfo.Name.Content}";
     }
 
     #region Helper Methods
@@ -686,7 +810,8 @@ public class GMLoaderProgram
             typeof(System.Drawing.Imaging.PixelFormat).GetTypeInfo().Assembly,
             typeof(Newtonsoft.Json.Linq.JObject).GetTypeInfo().Assembly,
             typeof(Newtonsoft.Json.JsonConvert).GetTypeInfo().Assembly,
-            typeof(System.Text.Json.JsonSerializer).GetTypeInfo().Assembly
+            typeof(System.Text.Json.JsonSerializer).GetTypeInfo().Assembly,
+            typeof(VYaml.Serialization.YamlSerializer).GetTypeInfo().Assembly
         };
 
         CliScriptOptions = ScriptOptions.Default
@@ -695,12 +820,12 @@ public class GMLoaderProgram
                 "UndertaleModLib", "UndertaleModLib.Models", "UndertaleModLib.Decompiler",
                 "UndertaleModLib.Scripting", "UndertaleModLib.Compiler",
                 "UndertaleModLib.Util", "GMLoader", "GMLoader.GMLoaderProgram", 
-                "ImageMagick", "Serilog", "xdelta3.net", "System", "System.Linq", 
+                "ImageMagick", "Serilog", "xdelta3.net", "System", "System.Text", "System.Linq", 
                 "System.IO", "System.Collections.Generic", "System.Drawing", 
                 "System.Drawing.Imaging", "System.Collections", 
                 "System.Text.RegularExpressions", "System.Text.Json", "System.Diagnostics",
                 "System.Threading", "System.Threading.Tasks", "Newtonsoft.Json", 
-                "Newtonsoft.Json.Linq")
+                "Newtonsoft.Json.Linq", "VYaml", "VYaml.Serialization", "VYaml.Annotations")
             // "WithEmitDebugInformation(true)" not only lets us to see a script line number which threw an exception,
             // but also provides other useful debug info when we run UMT in "Debug".
             .WithEmitDebugInformation(true);
