@@ -51,32 +51,37 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Config.Net" Version="5.2.0" />
-    <PackageReference Include="Fody" Version="6.8.2">
+    <PackageReference Include="Config.Net" Version="5.2.1" />
+    <PackageReference Include="Fody" Version="6.9.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="14.0.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.24415.1">
+    <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="14.5.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.13.0" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="nulastudio.NetBeauty" Version="2.1.4.5" />
+    <PackageReference Include="nulastudio.NetBeauty" Version="2.1.4.6" />
     <PackageReference Include="PropertyChanged.Fody" Version="4.1.0" />
     <PackageReference Include="Serilog" Version="4.0.2" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
     <PackageReference Include="SharpZipLib" Version="1.4.2" />
-    <PackageReference Include="System.Drawing.Common" Version="8.0.8" />
+    <PackageReference Include="Standart.Hash.xxHash" Version="4.0.5" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.3" />
+    <PackageReference Include="VYaml" Version="1.0.0" />
     <PackageReference Include="xdelta3.net" Version="1.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="Standart.Hash.xxHash">
       <HintPath>lib\Standart.Hash.xxHash.dll</HintPath>
+    </Reference>
+    <Reference Include="Underanalyzer">
+      <HintPath>lib\Underanalyzer.dll</HintPath>
     </Reference>
     <Reference Include="UndertaleModLib">
       <HintPath>lib\UndertaleModLib.dll</HintPath>
@@ -97,6 +102,27 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="mods\csx\after\sanitycheck.csx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="mods\csx\builtin\1_ImportTexture.csx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="mods\csx\builtin\2_ImportShader.csx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="mods\csx\builtin\3_NewObjectManipulation.csx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="mods\csx\builtin\4_ImportGML.csx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="mods\csx\builtin\5_PrependGML.csx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="mods\csx\builtin\6_AppendGML.csx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="mods\csx\builtin\7_ExistingObjectManipulation.csx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="mods\csx\builtin\exportscript\exportAudio.csx">
