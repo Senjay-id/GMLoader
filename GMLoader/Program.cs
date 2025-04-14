@@ -69,6 +69,7 @@ public interface IConfig
     public string ModsDirectory { get; }
     public string TexturesDirectory { get; }
     public string TexturesConfigDirectory { get; }
+    public string BackgroundsConfigDirectory { get; }
     public string ShaderDirectory { get; }
     public string ConfigDirectory { get; }
     public string GMLCodeDirectory { get; }
@@ -152,6 +153,33 @@ public partial class SpriteData
     public uint? yml_sepmask { get; set; }     // Nullable uint
 }
 
+[YamlObject]
+public partial class BackgroundData
+{
+    [YamlMember("tile_count")]
+    public uint? yml_tile_count { get; set; }  // Nullable uint
+    [YamlMember("tile_width")]
+    public uint? yml_tile_width { get; set; }      // Nullable uint
+    [YamlMember("tile_height")]
+    public uint? yml_tile_height { get; set; }      // Nullable uint
+    [YamlMember("border_x")]
+    public uint? yml_border_x { get; set; }      // Nullable uint
+    [YamlMember("border_y")]
+    public uint? yml_border_y { get; set; }  // Nullable uint
+    [YamlMember("tile_column")]
+    public uint? yml_tile_column { get; set; }      // Nullable uint
+    [YamlMember("item_per_tile")]
+    public uint? yml_item_per_tile { get; set; }     // Nullable uint
+    [YamlMember("transparent")]
+    public bool? yml_transparent { get; set; }     // Nullable bool
+    [YamlMember("smooth")]
+    public bool? yml_smooth { get; set; }     // Nullable bool
+    [YamlMember("preload")]
+    public bool? yml_preload { get; set; }     // Nullable bool
+    [YamlMember("frametime")]
+    public int? yml_frametime { get; set; }     // Nullable int
+}
+
 public class GMLoaderProgram
 {
     #region Properties
@@ -177,6 +205,7 @@ public class GMLoaderProgram
     public static int invalidSpriteSize { get; set; }
     public static string texturesPath { get; set; }
     public static string texturesConfigPath { get; set; }
+    public static string backgroundsConfigPath { get; set; }
     public static string shaderPath { get; set; }
     public static string configPath { get; set; }
     public static string gmlCodePath { get; set; }
@@ -216,8 +245,11 @@ public class GMLoaderProgram
     public static int defaultBGFrameTime { get; set; }
 
     public static List<string> spriteList = new List<string>();
+    public static List<string> backgroundList = new List<string>();
     public static Dictionary<string, SpriteData> spriteDictionary = new Dictionary<string, SpriteData>();
+    public static Dictionary<string, BackgroundData> backgroundDictionary = new Dictionary<string, BackgroundData>();
     public static string[] spritesToImport;
+    public static string[] backgroundsToImport;
 
     #endregion
 
@@ -288,6 +320,7 @@ public class GMLoaderProgram
             modsPath = config.ModsDirectory;
             texturesPath = config.TexturesDirectory;
             texturesConfigPath = config.TexturesConfigDirectory;
+            backgroundsConfigPath = config.BackgroundsConfigDirectory;
             shaderPath = config.ShaderDirectory;
             configPath = config.ConfigDirectory;
             gmlCodePath = config.GMLCodeDirectory;
@@ -330,6 +363,7 @@ public class GMLoaderProgram
             mkDir(modsPath);
             mkDir(texturesPath);
             mkDir(texturesConfigPath);
+            mkDir(backgroundsConfigPath);
             mkDir(importPreCSXPath);
             mkDir(importBuiltInCSXPath);
             mkDir(importPostCSXPath);
@@ -628,46 +662,104 @@ public class GMLoaderProgram
 
     private static async Task importGraphic()
     {
-        Log.Information("Executing built-in ImportGraphic");
         spriteDictionary.Clear();
         spriteList.Clear();
-        Dictionary<string, SpriteData> spriteParameters = new();
-        string[] spriteConfigFIles = Directory.GetFiles(texturesConfigPath, "*.yaml*", SearchOption.TopDirectoryOnly);
-        List<string> spriteFilenames = new List<string>();
+        backgroundDictionary.Clear();
+        backgroundList.Clear();
         string pngExt = ".png";
 
-        Log.Information("Deserializing sprite configuration files, please close GMLoader if it takes more than 5 second for a config file.");
-        Console.Title = $"GMLoader - Deserializing sprite configuration files, please close GMLoader if it takes more than 5 second for a config file";
-        foreach (string file in spriteConfigFIles)
+        string[] spriteConfigFIles = Directory.GetFiles(texturesConfigPath, "*.yaml*", SearchOption.TopDirectoryOnly);
+        string[] backgroundConfigFIles = Directory.GetFiles(backgroundsConfigPath, "*.yaml*", SearchOption.TopDirectoryOnly);
+        if (spriteConfigFIles.Length == 0 && backgroundConfigFIles.Length == 0)
         {
-            byte[] yamlBytes = File.ReadAllBytes(file);
-            Log.Information($"Deserializing {Path.GetFileName(file)}");
-            var deserialized = YamlSerializer.Deserialize<Dictionary<string, SpriteData>>(yamlBytes);
-            foreach (var (spritename, configs) in deserialized)
-            {
-                spriteFilenames.Add(spritename + pngExt);
-                spriteList.Add(spritename);
-
-                spriteDictionary[spritename] = new SpriteData
-                {
-                    yml_frame = configs.yml_frame ?? 1,
-                    yml_x = configs.yml_x ?? defaultSpriteX,
-                    yml_y = configs.yml_y ?? defaultSpriteY,
-                    yml_transparent = configs.yml_transparent ?? defaultSpriteTransparent,
-                    yml_smooth = configs.yml_smooth ?? defaultSpriteSmooth,
-                    yml_preload = configs.yml_preload ?? defaultSpritePreload,
-                    yml_speedtype = configs.yml_speedtype ?? defaultSpriteSpeedType,
-                    yml_framespeed = configs.yml_framespeed ?? defaultSpriteFrameSpeed,
-                    yml_boundingboxtype = configs.yml_boundingboxtype ?? defaultSpriteBoundingBoxType,
-                    yml_bboxleft = configs.yml_bboxleft ?? defaultSpriteBoundingBoxLeft,
-                    yml_bboxright = configs.yml_bboxright ?? defaultSpriteBoundingBoxRight,
-                    yml_bboxbottom = configs.yml_bboxbottom ?? defaultSpriteBoundingBoxBottom,
-                    yml_bboxtop = configs.yml_bboxtop ?? defaultSpriteBoundingBoxTop,
-                    yml_sepmask = configs.yml_sepmask ?? defaultSpriteSepMasksType
-                };
-            }
+            Log.Debug($"The sprite and background configuration files are empty, at {texturesConfigPath}, skipping texture import");
+            return;
         }
-        spritesToImport = spriteFilenames.ToArray();
+
+        Log.Information("Executing built-in ImportGraphic");
+
+        if (spriteConfigFIles.Length != 0)
+        {
+            Dictionary<string, SpriteData> spriteParameters = new();
+            List<string> spriteFilenames = new List<string>();
+
+            Log.Information("Deserializing sprite configuration files, please close GMLoader if it takes more than 5 second for a config file.");
+            Console.Title = $"GMLoader - Deserializing sprite configuration files, please close GMLoader if it takes more than 5 second for a config file";
+            foreach (string file in spriteConfigFIles)
+            {
+                byte[] yamlBytes = File.ReadAllBytes(file);
+                Log.Information($"Deserializing {Path.GetFileName(file)}");
+                var deserialized = YamlSerializer.Deserialize<Dictionary<string, SpriteData>>(yamlBytes);
+                foreach (var (spritename, configs) in deserialized)
+                {
+                    spriteFilenames.Add(spritename + pngExt);
+                    spriteList.Add(spritename);
+
+                    spriteDictionary[spritename] = new SpriteData
+                    {
+                        yml_frame = configs.yml_frame ?? 1,
+                        yml_x = configs.yml_x ?? defaultSpriteX,
+                        yml_y = configs.yml_y ?? defaultSpriteY,
+                        yml_transparent = configs.yml_transparent ?? defaultSpriteTransparent,
+                        yml_smooth = configs.yml_smooth ?? defaultSpriteSmooth,
+                        yml_preload = configs.yml_preload ?? defaultSpritePreload,
+                        yml_speedtype = configs.yml_speedtype ?? defaultSpriteSpeedType,
+                        yml_framespeed = configs.yml_framespeed ?? defaultSpriteFrameSpeed,
+                        yml_boundingboxtype = configs.yml_boundingboxtype ?? defaultSpriteBoundingBoxType,
+                        yml_bboxleft = configs.yml_bboxleft ?? defaultSpriteBoundingBoxLeft,
+                        yml_bboxright = configs.yml_bboxright ?? defaultSpriteBoundingBoxRight,
+                        yml_bboxbottom = configs.yml_bboxbottom ?? defaultSpriteBoundingBoxBottom,
+                        yml_bboxtop = configs.yml_bboxtop ?? defaultSpriteBoundingBoxTop,
+                        yml_sepmask = configs.yml_sepmask ?? defaultSpriteSepMasksType
+                    };
+                }
+            }
+            spritesToImport = spriteFilenames.ToArray();
+        }
+        else
+        {
+            Log.Debug("The sprite configuration files are empty, skipping...");
+        }
+
+        if (backgroundConfigFIles.Length != 0)
+        {
+            Dictionary<string, BackgroundData> backgroundParameters = new();
+
+            List<string> backgroundFilenames = new List<string>();
+
+            Log.Information("Deserializing backgrounds configuration files, please close GMLoader if it takes more than 5 second for a config file.");
+            Console.Title = $"GMLoader - Deserializing backgrounds configuration files, please close GMLoader if it takes more than 5 second for a config file";
+            foreach (string file in backgroundConfigFIles)
+            {
+                byte[] yamlBytes = File.ReadAllBytes(file);
+                Log.Information($"Deserializing {Path.GetFileName(file)}");
+                var deserialized = YamlSerializer.Deserialize<Dictionary<string, BackgroundData>>(yamlBytes);
+                foreach (var (backgroundname, configs) in deserialized)
+                {
+                    backgroundFilenames.Add(backgroundname + pngExt);
+                    backgroundList.Add(backgroundname);
+
+                    backgroundDictionary[backgroundname] = new BackgroundData
+                    {
+                        yml_tile_count = configs.yml_tile_count ?? defaultBGTileCount,
+                        yml_tile_width = configs.yml_tile_width ?? defaultBGTileWidth,
+                        yml_tile_height = configs.yml_tile_height ?? defaultBGTileHeight,
+                        yml_border_x = configs.yml_border_x ?? defaultBGBorderX,
+                        yml_border_y = configs.yml_border_y ?? defaultBGBorderY,
+                        yml_tile_column = configs.yml_tile_column ?? defaultBGTileColumn,
+                        yml_item_per_tile = configs.yml_item_per_tile ?? defaultBGItemOrFramePerTile,
+                        yml_transparent = configs.yml_transparent ?? defaultBGTransparent,
+                        yml_smooth = configs.yml_smooth ?? defaultBGSmooth,
+                        yml_preload = configs.yml_preload ?? defaultBGPreload,
+                    };
+                }
+            }
+            backgroundsToImport = backgroundFilenames.ToArray();
+        }
+        else
+        {
+            Log.Debug("The background sprite configuration files are empty, skipping...");
+        }
         Console.Title = $"GMLoader  -  {Data.GeneralInfo.Name.Content}";
     }
 
