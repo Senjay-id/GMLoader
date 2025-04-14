@@ -77,22 +77,8 @@ uint tileColumn = DefaultBGTileColumn;
 uint itemOrFramePerTile = DefaultBGItemOrFramePerTile;
 uint tileCount = DefaultBGTileCount;
 int frameTime = DefaultBGFrameTime;
-Regex backgroundRegex = new Regex(@"_tc(\d+)|_tw(\d+)|_th(\d+)|_x(\d+)|_y(\d+)|_col(\d+)|_ipt(\d+)", RegexOptions.Compiled);
 
 HashSet<string> spritesStartAt1 = new HashSet<string>();
-
-public class SpriteProperties
-{
-	public int XCoordinate { get; set; }
-	public int YCoordinate { get; set; }
-	public uint SpeedType { get; set; }
-	public float FrameSpeed { get; set; }
-	public uint BoundingBoxType { get; set; }
-	public int LeftCollision { get; set; }
-	public int RightCollision { get; set; }
-	public int BottomCollision { get; set; }
-	public int TopCollision { get; set; }
-}
 
 int coreCount = Environment.ProcessorCount - 1;
 // If you want to use all your cores just uncomment the code below
@@ -194,35 +180,30 @@ foreach (Atlas atlas in packer.Atlasses)
 
 			if (spriteType == SpriteType.Background)
 			{
-
-				int tileCountIndex = stripped.IndexOf("_tc");
-				string bgSpriteName = tileCountIndex != -1 ? stripped.Substring(0, tileCountIndex) : stripped;
-				tileCount = DefaultBGTileCount;
-				tileWidth = DefaultBGTileWidth;
-				tileHeight = DefaultBGTileHeight;
-				borderX = DefaultBGBorderX;
-				borderY = DefaultBGBorderY;
-				tileColumn = DefaultBGTileColumn;
-				itemOrFramePerTile = DefaultBGItemOrFramePerTile;
-				MatchCollection matches = backgroundRegex.Matches(stripped);
-				foreach (Match match in matches)
+				string bgSpriteName = stripped;
+				
+				if (backgroundDictionary.TryGetValue(bgSpriteName, out BackgroundData bgProps))
+					{
+						bgTransparent = bgProps.yml_transparent.Value;
+						bgSmooth = bgProps.yml_smooth.Value;
+						bgPreload = bgProps.yml_preload.Value;
+						tileWidth = bgProps.yml_tile_width.Value;
+						tileHeight = bgProps.yml_tile_height.Value;
+						borderX = bgProps.yml_border_x.Value;
+						borderY = bgProps.yml_border_y.Value;
+						tileColumn = bgProps.yml_tile_column.Value;
+						itemOrFramePerTile = bgProps.yml_item_per_tile.Value;
+						tileCount = bgProps.yml_tile_count.Value;
+						//frameTime = bgProps.yml_frametime.Value;
+						//Log.Information($"{bgSpriteName} tile_count: {bgProps.yml_tile_count.Value} tile_width: {bgProps.yml_tile_width.Value}");
+					}
+				else
 				{
-					if (match.Groups[1].Success)
-						tileCount = uint.Parse(match.Groups[1].Value);
-					else if (match.Groups[2].Success)
-						tileWidth = uint.Parse(match.Groups[2].Value);
-					else if (match.Groups[3].Success)
-						tileHeight = uint.Parse(match.Groups[3].Value);
-					else if (match.Groups[4].Success)
-						borderX = uint.Parse(match.Groups[4].Value);
-					else if (match.Groups[5].Success)
-						borderY = uint.Parse(match.Groups[5].Value);
-					else if (match.Groups[6].Success)
-						tileColumn = uint.Parse(match.Groups[6].Value);
-					else if (match.Groups[7].Success)
-						itemOrFramePerTile = uint.Parse(match.Groups[7].Value);
+					Log.Warning($"Warning: Sprite properties not found for {spriteName} this happens because the configuration entry for the sprite doesn't exists");
 				}
+
 				UndertaleBackground background = Data.Backgrounds.ByName(stripped);
+
 				if (background != null)
 				{
 					background.Transparent = bgTransparent;
@@ -667,7 +648,7 @@ public class Packer
 					throw new Exception();
 				}
 
-				if (!isSprite && frames > 0)
+				if (!isSprite && frames > 1)
 				{
 					Log.Error(fullName + " is not a sprite, but has more than 1 frame.");
 					throw new Exception();
@@ -891,7 +872,7 @@ public static SpriteType GetSpriteType(string path)
 	string folderName = new DirectoryInfo(folderPath).Name;
 	string lowerName = folderName.ToLower();
 
-	if (lowerName == "backgrounds" || lowerName == "background")
+	if (lowerName == "backgrounds")
 	{
 		return SpriteType.Background;
 	}
