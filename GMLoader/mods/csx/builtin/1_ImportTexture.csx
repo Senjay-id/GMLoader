@@ -890,6 +890,7 @@ public static SpriteType GetSpriteType(string path)
 void CheckValidity()
 {
     string importFolder = texturesPath;
+	bool hasSpriteStripFiles = true;
 
     // Stop the script if there's missing sprite entries or w/e.
     bool hadMessage = false;
@@ -902,7 +903,8 @@ void CheckValidity()
 
     if (dirFiles.Length == 0)
     {
-        Log.Debug($"No textures to import at {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importFolder))}");
+        Log.Debug($"No sprite strip textures to import at {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importFolder))}");
+		hasSpriteStripFiles = false;
     }
 
     // Cache files from the import folder once
@@ -911,40 +913,43 @@ void CheckValidity()
     var fileSet = new HashSet<string>(allFiles.Select(Path.GetFileName));  // Create a set of filenames for quick lookup
 
 	// fix me later maybe
-    foreach (string file in spriteDataFiles)
-    {
-        string spritesPath = Path.GetDirectoryName(file);
-        string spriteName = Path.GetFileName(spritesPath);
-        string spriteData = Path.GetFullPath(Path.Combine(spritesPath, "data.json"));
-        string jsonContent = File.ReadAllText(spriteData);
-        JObject jsonObject = JObject.Parse(jsonContent);
-        
-        xCoordinate = (int)jsonObject["OriginX"];
-        yCoordinate = (int)jsonObject["OriginY"];
-        speedType = (uint)jsonObject["SpeedType"];
-        frameSpeed = (float)jsonObject["FrameSpeed"];
-        boundingBoxType = (uint)jsonObject["BBoxMode"];
-        leftCollision = (int)jsonObject["BBoxLeft"];
-        rightCollision = (int)jsonObject["BBoxRight"];
-        topCollision = (int)jsonObject["BBoxTop"];
-        bottomCollision = (int)jsonObject["BBoxBottom"];
+	if (hasSpriteStripFiles)
+	{
+		foreach (string file in spriteDataFiles)
+		{
+			string spritesPath = Path.GetDirectoryName(file);
+			string spriteName = Path.GetFileName(spritesPath);
+			string spriteData = Path.GetFullPath(Path.Combine(spritesPath, "data.json"));
+			string jsonContent = File.ReadAllText(spriteData);
+			JObject jsonObject = JObject.Parse(jsonContent);
+			
+			xCoordinate = (int)jsonObject["OriginX"];
+			yCoordinate = (int)jsonObject["OriginY"];
+			speedType = (uint)jsonObject["SpeedType"];
+			frameSpeed = (float)jsonObject["FrameSpeed"];
+			boundingBoxType = (uint)jsonObject["BBoxMode"];
+			leftCollision = (int)jsonObject["BBoxLeft"];
+			rightCollision = (int)jsonObject["BBoxRight"];
+			topCollision = (int)jsonObject["BBoxTop"];
+			bottomCollision = (int)jsonObject["BBoxBottom"];
 
-        spriteDictionary[spriteName] = new SpriteData
-        {
-            yml_x = xCoordinate,
-            yml_y = yCoordinate,
-            yml_speedtype = speedType,
-            yml_framespeed = frameSpeed,
-            yml_boundingboxtype = boundingBoxType,
-            yml_bboxleft = leftCollision,
-            yml_bboxright = rightCollision,
-            yml_bboxbottom = bottomCollision,
-            yml_bboxtop = topCollision
-        };  
-        
-        spriteList.Add(spriteName);
-    }
-	
+			spriteDictionary[spriteName] = new SpriteData
+			{
+				yml_x = xCoordinate,
+				yml_y = yCoordinate,
+				yml_speedtype = speedType,
+				yml_framespeed = frameSpeed,
+				yml_boundingboxtype = boundingBoxType,
+				yml_bboxleft = leftCollision,
+				yml_bboxright = rightCollision,
+				yml_bboxbottom = bottomCollision,
+				yml_bboxtop = topCollision
+			};  
+			
+			spriteList.Add(spriteName);
+		}
+	}
+
     foreach (string file in dirFiles)
     {
         string FileNameWithExtension = Path.GetFileName(file);
