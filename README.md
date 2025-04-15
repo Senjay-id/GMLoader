@@ -9,10 +9,8 @@ GMLoader is a program that can recompile non-YYC GM:Studio games data using [Und
 * Existing GameObjects Manipulation by loading configuration files inside GameFolder/mods/config/existing_object/*.json
 * Add and Manipulate new GameObjects by loading configuration files inside GameFolder/mods/config/new_object/*.json
 * Import shaders by loading exported shader files inside GameFolder/mods/shader/*any_shader_folder
+* Import rooms by loading the room files inside GameFolder/mods/room/*.json
 * Load your own custom CSharp Script files inside GameFolder/csx/pre/*.csx or GameFolder/csx/post/*.csx
-
-### Yet to be added
-* Importing Room
 
 ### [Wiki](https://github.com/Senjay-id/GMLoader/wiki)
 Contains User guide and Modders guide
