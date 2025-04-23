@@ -1,9 +1,3 @@
-void EnsureDataLoaded()
-{
-    if (Data is null)
-        throw new ScriptException("No data file is currently loaded!");
-}
-
 mkDir(shaderPath);
 
 string[] directories = Directory.GetDirectories(shaderPath);
@@ -13,8 +7,6 @@ if (directories.Length == 0)
     Log.Debug("The shader import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, shaderPath)) + " , skipping the process");
     return;
 }
-
-EnsureDataLoaded();
 
 List<string> shadersExisting = new List<string>();
 List<string> shadersNonExist = new List<string>();

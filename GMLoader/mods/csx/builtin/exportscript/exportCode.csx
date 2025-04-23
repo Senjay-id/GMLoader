@@ -1,11 +1,9 @@
-if (Data is null)
-{
-    Log.Error("Exception: No Data loaded!");
-    throw new Exception();
-}
-
 string codeFolder = exportCodeOutputPath;
-ThreadLocal<GlobalDecompileContext> DECOMPILE_CONTEXT = new ThreadLocal<GlobalDecompileContext>(() => new GlobalDecompileContext(Data, false));
+Directory.CreateDirectory(codeFolder);
+
+GlobalDecompileContext globalDecompileContext = new(Data);
+Underanalyzer.Decompiler.IDecompileSettings decompilerSettings = Data.ToolInfo.DecompilerSettings;
+List<UndertaleCode> toDump = Data.Code.Where(c => c.ParentEntry is null).ToList();
 
 int coreCount = Environment.ProcessorCount - 1;
 // If you want to use all your cores just uncomment the code below
@@ -18,39 +16,7 @@ if (coreCount == 0)
 var options = new ParallelOptions { MaxDegreeOfParallelism = coreCount }; // Adjust the degree of parallelism
 Log.Information($"Using {coreCount} cores to dump the code");
 
-Directory.CreateDirectory(codeFolder);
-
-bool exportFromCache = false;
-
-List<UndertaleCode> toDump;
-if (!exportFromCache)
-{
-    toDump = new();
-    foreach (UndertaleCode code in Data.Code)
-    {
-        if (code.ParentEntry != null)
-            continue;
-        toDump.Add(code);
-    }
-}
-
-//List<string> invalidCodeNames = new List<string>();
-//int invalidCode = 0;
-
-bool cacheGenerated = false;
-
 await DumpCode();
-
-/*
-if (invalidCode > 0)
-{
-    Log.Error("[Error] Failed to decompile the code below:");
-    foreach (string name in invalidCodeNames)
-    {
-        Log.Error(name);
-    }
-}
-*/
 
 Log.Information("All code has been exported to " + Path.GetFullPath(codeFolder));
 
@@ -61,53 +27,27 @@ string GetFolder(string path)
 
 async Task DumpCode()
 {
-    if (cacheGenerated)
-    {
-        await Task.Run(() => Parallel.ForEach(Data.GMLCache, DumpCachedCode));
-
-        if (Data.GMLCacheFailed.Count > 0)
-        {
-            if (Data.KnownSubFunctions is null) //if we run script before opening any code
-            {
-                await Task.Run(() => Decompiler.BuildSubFunctionCache(Data));
-            }
-
-            await Task.Run(() => Parallel.ForEach(Data.GMLCacheFailed, options, (codeName) => DumpCode(Data.Code.ByName(codeName))));
-        }
-    }
-    else
-    {
-        if (Data.KnownSubFunctions is null) //if we run script before opening any code
-        {
-            await Task.Run(() => Decompiler.BuildSubFunctionCache(Data));
-        }
-
-        await Task.Run(() => Parallel.ForEach(toDump, options, DumpCode));
-    }
+    await Task.Run(() => Parallel.ForEach(toDump, DumpCode));
 }
 
 void DumpCode(UndertaleCode code)
 {
+    
     if (code is not null)
     {
         string path = Path.Combine(codeFolder, code.Name.Content + ".gml");
+        Log.Information($"Exporting {code.Name.Content}");
         try
         {
-            File.WriteAllText(path, (code != null ? Decompiler.Decompile(code, DECOMPILE_CONTEXT.Value) : ""));
-            Log.Information($"Exported {code.Name.Content}");
+            File.WriteAllText(path, (code != null 
+                ? new Underanalyzer.Decompiler.DecompileContext(globalDecompileContext, code, decompilerSettings).DecompileToString() 
+                : ""));
         }
         catch (Exception e)
         {
-            Log.Error($"[Error] Failed to decompile {code.Name.Content}");
-            invalidCodeNames.Add(code.Name.Content);
-            invalidCode++;
+            Log.Error($"DECOMPILER FAILED!\n\n {e.ToString()}");
+            File.WriteAllText(path, "/*\nDECOMPILER FAILED!\n\n" + e.ToString() + "\n*/");
         }
-
     }
-}
-void DumpCachedCode(KeyValuePair<string, string> code)
-{
-    string path = Path.Combine(codeFolder, code.Key + ".gml");
-
-    File.WriteAllText(path, code.Value);
+    
 }

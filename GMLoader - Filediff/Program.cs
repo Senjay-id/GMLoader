@@ -3,11 +3,19 @@ using Serilog;
 using Standart.Hash.xxHash;
 using System.Text.RegularExpressions;
 using System.Collections.Concurrent;
+using Config.Net;
+public interface IConfig
+{
+    public string ExportTextureConfigOutputPath { get; }
+    public string ExportBackgroundTextureConfigOutputPath { get; }
+}
 
 class Program
 {
     public static List<string> invalidFileStreamNames { get; set; }
     public static int invalidFileStream { get; set; }
+    public static string exportTextureConfigOutputPath { get; set; }
+    public static string exportBackgroundTextureConfigOutputPath { get; set; }
 
     [STAThread]
     static void Main()
@@ -22,6 +30,20 @@ class Program
                 .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
                 .WriteTo.File("GMLoader - Filediff.log")
                 .CreateLogger();
+
+            if (!File.Exists("..\\GMLoader.ini"))
+            {
+                Log.Information("Missing GMLoader.ini file \n\n\nPress any key to close...");
+                Console.ReadKey();
+                Environment.Exit(0);
+            }
+
+            IConfig config = new ConfigurationBuilder<IConfig>()
+               .UseIniFile("..\\GMLoader.ini")
+               .Build();
+
+            exportTextureConfigOutputPath = config.ExportTextureConfigOutputPath;
+            exportBackgroundTextureConfigOutputPath = config.ExportBackgroundTextureConfigOutputPath;
 
             Console.WriteLine("Select the vanilla folder");
             string firstFolderPath = SelectFolder("Select the vanilla folder");
@@ -52,6 +74,58 @@ class Program
                 Log.Error("The invalid file stream could be caused by empty file, please check if the file is indeed empty in UMT");
                 Log.Information("");
             }
+
+            Log.Information("Merging sprite configuration files");
+            string spriteConfigFileName = "MyModdedSpriteConfig.yaml";
+            string backgroundSpriteConfigFilename = "MyModdedBackgroundSpriteConfig.yaml";
+            string spriteConfigRelativePath = Path.Combine(outputFolderPath, Path.GetFileName(exportTextureConfigOutputPath));
+            string backgroundSpriteConfigRelativePath = Path.Combine(spriteConfigRelativePath, "backgrounds");
+            mkDir(spriteConfigRelativePath);
+            mkDir(backgroundSpriteConfigRelativePath);
+            string[] spriteConfigFiles = Directory.GetFiles(spriteConfigRelativePath, "*.yaml", SearchOption.TopDirectoryOnly);
+            string[] BackgroundSpriteConfigFIles = Directory.GetFiles(backgroundSpriteConfigRelativePath, "*.yaml", SearchOption.TopDirectoryOnly);
+            
+            if (spriteConfigFiles.Length != 0)
+            {
+                using (StreamWriter writer = new StreamWriter(spriteConfigFileName))
+                {
+                    foreach (string file in spriteConfigFiles)
+                    {
+                        Log.Information($"Merging {Path.GetFileName(file)}");
+
+                        string fileContent = File.ReadAllText(file);
+                        writer.WriteLine(fileContent);
+                        //writer.WriteLine(); // Add blank line between files
+                    }
+                }
+                foreach (string file in spriteConfigFiles)
+                {
+                    File.Delete(file);
+                    Console.WriteLine($"Deleted: {Path.GetFileName(file)}");
+                }
+            }
+            if (BackgroundSpriteConfigFIles.Length != 0)
+            {
+                using (StreamWriter writer = new StreamWriter(backgroundSpriteConfigFilename))
+                {
+                    foreach (string file in BackgroundSpriteConfigFIles)
+                    {
+                        Log.Information($"Merging {Path.GetFileName(file)}");
+
+                        string fileContent = File.ReadAllText(file);
+                        writer.WriteLine(fileContent);
+                        //writer.WriteLine(); // Add blank line between files
+                    }
+                    foreach (string file in BackgroundSpriteConfigFIles)
+                    {
+                        File.Delete(file);
+                        Log.Information($"Deleted: {Path.GetFileName(file)}");
+                    }
+                }
+            }
+
+            File.Copy(spriteConfigFileName, Path.Combine(spriteConfigRelativePath, spriteConfigFileName));
+            File.Copy(backgroundSpriteConfigFilename, Path.Combine(backgroundSpriteConfigRelativePath, backgroundSpriteConfigFilename));
 
             Console.WriteLine($"All files have been copied to the output folder at: {outputFolderPath}");
             Console.WriteLine("Press any key to close...");
