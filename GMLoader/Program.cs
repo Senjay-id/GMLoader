@@ -46,6 +46,10 @@ public interface IConfig
     public string ExportAudioOutputPath { get; }
     public string ExportTextureScriptPath { get; }
     public string ExportTextureOutputPath { get; }
+    public string ExportTextureBackgroundOutputPath { get; }
+    public string ExportTextureNoStripOutputPath { get; }
+    public string ExportTextureConfigOutputPath { get; }
+    public string ExportBackgroundTextureConfigOutputPath { get; }
     public string ExportGameObjectScriptPath { get; }
     public string ExportGameObjectOutputPath { get; }
     public string ExportCodeScriptPath { get; }
@@ -69,10 +73,12 @@ public interface IConfig
     public string ModsDirectory { get; }
     public string TexturesDirectory { get; }
     public string TexturesConfigDirectory { get; }
+    public string NoStripTexturesDirectory { get; }
     public string BackgroundsConfigDirectory { get; }
     public string ShaderDirectory { get; }
     public string ConfigDirectory { get; }
     public string GMLCodeDirectory { get; }
+    public string GMLCodePatchDirectory { get; }
     public string CollisionDirectory { get; }
     public string ASMDirectory { get; }
     public string PrependGMLDirectory { get; }
@@ -80,6 +86,7 @@ public interface IConfig
     public string AppendGMLCollisionDirectory { get; }
     public string NewObjectDirectory { get; }
     public string ExistingObjectDirectory { get; }
+    public string RoomDirectory { get; }
     public int DefaultSpriteX { get; }
     public int DefaultSpriteY { get; }
     public uint DefaultSpriteSpeedType { get; }
@@ -108,8 +115,27 @@ public interface IConfig
 }
 
 [YamlObject]
+public partial class CodeData
+{
+
+    [YamlMember("type")]
+    public string? yml_type { get; set; }
+
+    [YamlMember("find")]
+    public string? yml_find { get; set; }
+
+    [YamlMember("code")]
+    public string? yml_code { get; set; }
+
+    [YamlMember("case_sensitive")]
+    public bool? yml_casesensitive { get; set; }
+
+}
+
+[YamlObject]
 public partial class SpriteData
 {
+
     [YamlMember("frames")]
     public int? yml_frame { get; set; }  // Nullable int
 
@@ -177,7 +203,7 @@ public partial class BackgroundData
     [YamlMember("preload")]
     public bool? yml_preload { get; set; }     // Nullable bool
     [YamlMember("frametime")]
-    public int? yml_frametime { get; set; }     // Nullable int
+    public long? yml_frametime { get; set; }     // Nullable int
 }
 
 public class GMLoaderProgram
@@ -191,6 +217,10 @@ public class GMLoaderProgram
     //public static bool exportGameObject { get; set; }
     //public static bool exportTexture { get; set; }
     public static string exportTextureOutputPath { get; set; }
+    public static string exportTextureBackgroundOutputPath { get; set; }
+    public static string exportTextureNoStripOutputPath { get; set; }
+    public static string exportTextureConfigOutputPath { get; set; }
+    public static string exportBackgroundTextureConfigOutputPath { get; set; }
     public static string exportAudioOutputPath { get; set; }
     public static string exportGameObjectOutputPath { get; set; }
     public static string exportCodeOutputPath { get; set; }
@@ -205,10 +235,12 @@ public class GMLoaderProgram
     public static int invalidSpriteSize { get; set; }
     public static string texturesPath { get; set; }
     public static string texturesConfigPath { get; set; }
+    public static string noStripTexturesPath { get; set; }
     public static string backgroundsConfigPath { get; set; }
     public static string shaderPath { get; set; }
     public static string configPath { get; set; }
     public static string gmlCodePath { get; set; }
+    public static string GMLCodePatchPath { get; set; }
     public static string collisionPath { get; set; }
     public static string asmPath { get; set; }
     public static string prependGMLPath { get; set; }
@@ -216,6 +248,7 @@ public class GMLoaderProgram
     public static string appendGMLCollisionPath { get; set; }
     public static string newObjectPath { get; set; }
     public static string existingObjectPath { get; set; }
+    public static string roomPath { get; set; }
     public static bool compileGML { get; set; }
     public static bool compileASM { get; set; }
     public static int defaultSpriteX { get; set; }
@@ -249,6 +282,7 @@ public class GMLoaderProgram
     public static Dictionary<string, SpriteData> spriteDictionary = new Dictionary<string, SpriteData>();
     public static Dictionary<string, BackgroundData> backgroundDictionary = new Dictionary<string, BackgroundData>();
     public static string[] spritesToImport;
+    public static string[] noStripStyleSpritesToImport;
     public static string[] backgroundsToImport;
 
     #endregion
@@ -300,6 +334,10 @@ public class GMLoaderProgram
             string exportRoomScriptPath = config.ExportRoomScriptPath;
             exportGameObjectOutputPath = config.ExportGameObjectOutputPath;
             exportTextureOutputPath = config.ExportTextureOutputPath;
+            exportTextureBackgroundOutputPath = config.ExportTextureBackgroundOutputPath;
+            exportTextureNoStripOutputPath = config.ExportTextureNoStripOutputPath;
+            exportTextureConfigOutputPath = config.ExportTextureConfigOutputPath;
+            exportBackgroundTextureConfigOutputPath = config.ExportBackgroundTextureConfigOutputPath;
             exportAudioOutputPath = config.ExportAudioOutputPath;
             exportCodeOutputPath = config.ExportCodeOutputPath;
             exportRoomOutputPath = config.ExportRoomOutputPath;
@@ -320,10 +358,12 @@ public class GMLoaderProgram
             modsPath = config.ModsDirectory;
             texturesPath = config.TexturesDirectory;
             texturesConfigPath = config.TexturesConfigDirectory;
+            noStripTexturesPath = config.NoStripTexturesDirectory;
             backgroundsConfigPath = config.BackgroundsConfigDirectory;
             shaderPath = config.ShaderDirectory;
             configPath = config.ConfigDirectory;
             gmlCodePath = config.GMLCodeDirectory;
+            GMLCodePatchPath = config.GMLCodePatchDirectory;
             collisionPath = config.CollisionDirectory;
             asmPath = config.ASMDirectory;
             prependGMLPath = config.PrependGMLDirectory;
@@ -331,6 +371,7 @@ public class GMLoaderProgram
             appendGMLCollisionPath = config.AppendGMLCollisionDirectory;
             newObjectPath = config.NewObjectDirectory;
             existingObjectPath = config.ExistingObjectDirectory;
+            roomPath = config.RoomDirectory;
 
             defaultSpriteX = config.DefaultSpriteX;
             defaultSpriteY = config.DefaultSpriteY;
@@ -363,7 +404,12 @@ public class GMLoaderProgram
             mkDir(modsPath);
             mkDir(texturesPath);
             mkDir(texturesConfigPath);
+            mkDir(gmlCodePath);
+            mkDir(GMLCodePatchPath);
+            mkDir(noStripTexturesPath);
             mkDir(backgroundsConfigPath);
+            mkDir(roomPath);
+            
             mkDir(importPreCSXPath);
             mkDir(importBuiltInCSXPath);
             mkDir(importPostCSXPath);
@@ -455,7 +501,7 @@ public class GMLoaderProgram
 
                 if (!exportGameObject && !exportCode && !exportTexture && !exportAudio && !exportRoom)
                 {
-                    Log.Information("No export option enabled??");
+                    Log.Information("No export option enabled?");
                     Console.ReadKey();
                     Environment.Exit(0);
                 }
@@ -480,8 +526,10 @@ public class GMLoaderProgram
                     }
                     Log.Information("");
                 }
-
-                Log.Information("Export done. Press any key to close...");
+                Console.WriteLine("");
+                Log.Information($"Assets has been exported to {Path.GetDirectoryName(Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, exportCodeOutputPath)))}");
+                Console.WriteLine("");
+                Log.Information("Press any key to close...");
                 Console.ReadKey();
                 Environment.Exit(0);
             }
@@ -571,12 +619,15 @@ public class GMLoaderProgram
                 Log.Information($"No builtin-CSX script file found at {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importBuiltInCSXPath))} , skipping the process.");
             }
 
+            await importConfigDefinedCode();
+
             //Compile users script after builtin scripts
 
             if (dirPostCSXFiles.Length != 0)
             {
                 if (compilePostCSX)
                 {
+                    
                     Log.Information("Loading post-CSX Scripts.");
                     foreach (string file in dirPostCSXFiles)
                     {
@@ -660,6 +711,72 @@ public class GMLoaderProgram
         }
     }
 
+    private static async Task importConfigDefinedCode()
+    {
+        string[] configFIles = Directory.GetFiles(GMLCodePatchPath, "*.yaml*", SearchOption.TopDirectoryOnly);
+
+        if (configFIles.Length == 0)
+        {
+            Log.Debug($"The config files are empty, at {GMLCodePatchPath}, skipping...");
+            return;
+        }
+
+        Log.Information("Executing built-in ImportCodePatch");
+
+        Log.Information("Deserializing code configuration files, please close GMLoader if it takes more than 5 second for a config file.");
+        Console.Title = $"GMLoader - Deserializing code configuration files, please close GMLoader if it takes more than 5 second for a config file";
+
+        UndertaleModLib.Compiler.CodeImportGroup importGroup = new(Data)
+        {
+            ThrowOnNoOpFindReplace = true
+        };
+
+        foreach (string file in configFIles) 
+        {
+            string? type; string? find; string code; bool caseSensitive;
+            byte[] yamlBytes = File.ReadAllBytes(file);
+            Log.Information($"Deserializing {Path.GetFileName(file)}");
+            var deserialized = YamlSerializer.Deserialize<Dictionary<string, CodeData>>(yamlBytes);
+            
+            foreach (var (codeName, configs) in deserialized)
+            {
+                Log.Information($"Patching {codeName}");
+                type = configs.yml_type ?? "";
+                find = configs.yml_find ?? "";
+                code = configs.yml_code; // It can be empty string
+                caseSensitive = configs.yml_casesensitive ?? true;
+
+                switch (type)
+                {
+                    case "findreplace":
+                        importGroup.QueueFindReplace(codeName, configs.yml_find, configs.yml_code, caseSensitive);
+                        break;
+                    case "regex":
+                        importGroup.QueueRegexFindReplace(codeName, configs.yml_find, configs.yml_code, caseSensitive);
+                        break;
+                    case "append":
+                        importGroup.QueueAppend(codeName, configs.yml_code);
+                        break;
+                    case "prepend":
+                        importGroup.QueuePrepend(codeName, configs.yml_code);
+                        break;
+                    default:
+                        Log.Error($"Unknown type '{type}' for {codeName}, skipping");
+                        continue;
+                }
+            }
+        }
+
+        try
+        {
+            importGroup.Import();
+        }
+        catch (Exception e)
+        {
+            Log.Error($"An error has occured:\n{e}");
+        }
+    }
+
     private static async Task importGraphic()
     {
         spriteDictionary.Clear();
@@ -669,6 +786,7 @@ public class GMLoaderProgram
         string pngExt = ".png";
 
         string[] spriteConfigFIles = Directory.GetFiles(texturesConfigPath, "*.yaml*", SearchOption.TopDirectoryOnly);
+        string[] spriteStripStyleConfigFiles = Directory.GetFiles(noStripTexturesPath, "*.yaml*", SearchOption.AllDirectories);
         string[] backgroundConfigFIles = Directory.GetFiles(backgroundsConfigPath, "*.yaml*", SearchOption.TopDirectoryOnly);
         if (spriteConfigFIles.Length == 0 && backgroundConfigFIles.Length == 0)
         {
@@ -680,7 +798,7 @@ public class GMLoaderProgram
 
         if (spriteConfigFIles.Length != 0)
         {
-            Dictionary<string, SpriteData> spriteParameters = new();
+            //Dictionary<string, SpriteData> spriteParameters = new();
             List<string> spriteFilenames = new List<string>();
 
             Log.Information("Deserializing sprite configuration files, please close GMLoader if it takes more than 5 second for a config file.");
@@ -760,7 +878,52 @@ public class GMLoaderProgram
         {
             Log.Debug("The background sprite configuration files are empty, skipping...");
         }
-        Console.Title = $"GMLoader  -  {Data.GeneralInfo.Name.Content}";
+
+        if (spriteStripStyleConfigFiles.Length != 0)
+        {
+           // Dictionary<string, SpriteData> spriteParameters = new();
+            List<string> spriteFilenames = new List<string>();
+            List<string> noStripStyleSpriteFoldernames = new List<string>();
+
+            Log.Information("Deserializing nostrip style sprite configuration files, please close GMLoader if it takes more than 5 second for a config file.");
+            Console.Title = $"GMLoader - Deserializing nostrip style sprite configuration files, please close GMLoader if it takes more than 5 second for a config file";
+
+            foreach (string file in spriteStripStyleConfigFiles)
+            {
+                byte[] yamlBytes = File.ReadAllBytes(file);
+                Log.Information($"Deserializing {Path.GetFileName(file)}");
+                var deserialized = YamlSerializer.Deserialize<SpriteData>(yamlBytes);
+                string spriteName = Path.GetDirectoryName(file);
+                //noStripStyleSpriteFoldernames.Add(spriteName);
+                //noStripStyleSpritesToImport = noStripStyleSpriteFoldernames.ToArray();
+
+                spriteList.Add(spriteName);
+
+                spriteDictionary[spriteName] = new SpriteData
+                {
+                    yml_x = deserialized.yml_x ?? defaultSpriteX,
+                    yml_y = deserialized.yml_y ?? defaultSpriteY,
+                    yml_transparent = deserialized.yml_transparent ?? defaultSpriteTransparent,
+                    yml_smooth = deserialized.yml_smooth ?? defaultSpriteSmooth,
+                    yml_preload = deserialized.yml_preload ?? defaultSpritePreload,
+                    yml_speedtype = deserialized.yml_speedtype ?? defaultSpriteSpeedType,
+                    yml_framespeed = deserialized.yml_framespeed ?? defaultSpriteFrameSpeed,
+                    yml_boundingboxtype = deserialized.yml_boundingboxtype ?? defaultSpriteBoundingBoxType,
+                    yml_bboxleft = deserialized.yml_bboxleft ?? defaultSpriteBoundingBoxLeft,
+                    yml_bboxright = deserialized.yml_bboxright ?? defaultSpriteBoundingBoxRight,
+                    yml_bboxbottom = deserialized.yml_bboxbottom ?? defaultSpriteBoundingBoxBottom,
+                    yml_bboxtop = deserialized.yml_bboxtop ?? defaultSpriteBoundingBoxTop,
+                    yml_sepmask = deserialized.yml_sepmask ?? defaultSpriteSepMasksType
+                };
+                
+            }
+        }
+        else
+        {
+            Log.Debug("The nostrip style sprite configuration files are empty, skipping...");
+        }
+
+            Console.Title = $"GMLoader  -  {Data.GeneralInfo.Name.Content}";
     }
 
     #region Helper Methods
