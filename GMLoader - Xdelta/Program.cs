@@ -1,6 +1,7 @@
 using Serilog.Events;
 using Serilog;
 using xdelta3.net;
+using System.Diagnostics;
 
 class Program
 {
@@ -64,7 +65,10 @@ class Program
                 string moddedFolder = SelectFolder("Select the modded folder");
                 if (string.IsNullOrEmpty(moddedFolder)) return;
 
+                Stopwatch stopwatch = Stopwatch.StartNew();
                 bulkDeltaPatch(vanillaFolder, moddedFolder, outputFolder);
+                stopwatch.Stop();
+                Log.Information($"Done, Elapsed time: {stopwatch.Elapsed.TotalSeconds:F2} seconds ({stopwatch.ElapsedMilliseconds} ms)");
                 Log.Information($"Patch files has been created at {outputFolder}\n\nPress any key to close.");
                 Console.ReadKey();
             }
@@ -79,17 +83,18 @@ class Program
         var vanillaFiles = Directory.GetFiles(vanillaFolder, "*.*", SearchOption.AllDirectories);
         var moddedFiles = Directory.GetFiles(moddedFolder, "*.*", SearchOption.AllDirectories);
 
-        // Create a hash set of modded file names for quick lookup
-        var moddedFileSet = new HashSet<string>(moddedFiles.Select(Path.GetFileName));
+        // Create a dictionary of modded file paths relative to the moddedFolder for quick lookup
+        var moddedFileDict = moddedFiles.ToDictionary(
+            file => Path.GetRelativePath(moddedFolder, file),
+            file => file
+        );
 
-        foreach (var vanillaFile in vanillaFiles)
+        Parallel.ForEach(vanillaFiles, vanillaFile =>
         {
-            string fileName = Path.GetFileName(vanillaFile);
+            string relativePath = Path.GetRelativePath(vanillaFolder, vanillaFile);
 
-            if (moddedFileSet.Contains(fileName))
+            if (moddedFileDict.TryGetValue(relativePath, out string moddedFile))
             {
-                string moddedFile = Path.Combine(moddedFolder, fileName);
-                string relativePath = Path.GetRelativePath(vanillaFolder, vanillaFile);
                 string outputFile = Path.Combine(outputFolder, relativePath + ".xdelta");
                 string outputFileDir = Path.GetDirectoryName(outputFile);
 
@@ -101,14 +106,14 @@ class Program
                 }
                 catch (Exception ex)
                 {
-                    Log.Error($"Failed to create patch for {fileName} : {ex}");
+                    Log.Error($"Failed to create patch for {relativePath} : {ex}");
                 }
             }
             else
             {
-                Log.Warning($"No corresponding modded file for: {fileName}");
+                Log.Warning($"No corresponding modded file for: {relativePath}");
             }
-        }
+        });
     }
     static void mkDir(string path)
     {

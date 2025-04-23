@@ -9,6 +9,6 @@ function trace_error() //gml_Script_trace_error
         _i++
     }
     trace(_string)
-    show_error(("Running in a modded environment, don't report the crash to the official developer.\n\nPlease attach the GMLoader.log located at the game folder when reporting the issue.\n\n\n" + _string + "\n "), true)
+    show_error(("Running in a modded environment, don't report the crash to the official developer.\n\nPlease attach the GMLoader.log located at the game folder when reporting the issue.\n\n\n" + _string + "\n\n "), true)
 }
 

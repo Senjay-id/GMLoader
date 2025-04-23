@@ -1,0 +1,44 @@
+C:\Hub\Modding\Projects\GMLoader - Xdelta\bin\Release\net8.0-windows\GMLoader - Xdelta.exe
+C:\Hub\Modding\Projects\GMLoader - Xdelta\bin\Release\net8.0-windows\GMLoader - Xdelta.deps.json
+C:\Hub\Modding\Projects\GMLoader - Xdelta\bin\Release\net8.0-windows\GMLoader - Xdelta.runtimeconfig.json
+C:\Hub\Modding\Projects\GMLoader - Xdelta\bin\Release\net8.0-windows\GMLoader - Xdelta.dll
+C:\Hub\Modding\Projects\GMLoader - Xdelta\bin\Release\net8.0-windows\GMLoader - Xdelta.pdb
+C:\Hub\Modding\Projects\GMLoader - Xdelta\bin\Release\net8.0-windows\Serilog.dll
+C:\Hub\Modding\Projects\GMLoader - Xdelta\bin\Release\net8.0-windows\Serilog.Sinks.Console.dll
+C:\Hub\Modding\Projects\GMLoader - Xdelta\bin\Release\net8.0-windows\Serilog.Sinks.File.dll
+C:\Hub\Modding\Projects\GMLoader - Xdelta\bin\Release\net8.0-windows\xdelta3.net.dll
+C:\Hub\Modding\Projects\GMLoader - Xdelta\bin\Release\net8.0-windows\runtimes\linux-x64\native\libxdelta3.so
+C:\Hub\Modding\Projects\GMLoader - Xdelta\bin\Release\net8.0-windows\runtimes\win-x64\native\xdelta3.dll
+C:\Hub\Modding\Projects\GMLoader - Xdelta\obj\Release\net8.0-windows\GMLoader - Xdelta.csproj.AssemblyReference.cache
+C:\Hub\Modding\Projects\GMLoader - Xdelta\obj\Release\net8.0-windows\GMLoader - Xdelta.GeneratedMSBuildEditorConfig.editorconfig
+C:\Hub\Modding\Projects\GMLoader - Xdelta\obj\Release\net8.0-windows\GMLoader - Xdelta.AssemblyInfoInputs.cache
+C:\Hub\Modding\Projects\GMLoader - Xdelta\obj\Release\net8.0-windows\GMLoader - Xdelta.AssemblyInfo.cs
+C:\Hub\Modding\Projects\GMLoader - Xdelta\obj\Release\net8.0-windows\GMLoader - Xdelta.csproj.CoreCompileInputs.cache
+C:\Hub\Modding\Projects\GMLoader - Xdelta\obj\Release\net8.0-windows\GMLoader.B8AC345A.Up2Date
+C:\Hub\Modding\Projects\GMLoader - Xdelta\obj\Release\net8.0-windows\GMLoader - Xdelta.dll
+C:\Hub\Modding\Projects\GMLoader - Xdelta\obj\Release\net8.0-windows\refint\GMLoader - Xdelta.dll
+C:\Hub\Modding\Projects\GMLoader - Xdelta\obj\Release\net8.0-windows\GMLoader - Xdelta.pdb
+C:\Hub\Modding\Projects\GMLoader - Xdelta\obj\Release\net8.0-windows\GMLoader - Xdelta.genruntimeconfig.cache
+C:\Hub\Modding\Projects\GMLoader - Xdelta\obj\Release\net8.0-windows\ref\GMLoader - Xdelta.dll
+C:\Hub\Modding\Project\GMLoader - Xdelta\bin\Release\net8.0-windows\GMLoader - Xdelta.exe
+C:\Hub\Modding\Project\GMLoader - Xdelta\bin\Release\net8.0-windows\GMLoader - Xdelta.deps.json
+C:\Hub\Modding\Project\GMLoader - Xdelta\bin\Release\net8.0-windows\GMLoader - Xdelta.runtimeconfig.json
+C:\Hub\Modding\Project\GMLoader - Xdelta\bin\Release\net8.0-windows\GMLoader - Xdelta.dll
+C:\Hub\Modding\Project\GMLoader - Xdelta\bin\Release\net8.0-windows\GMLoader - Xdelta.pdb
+C:\Hub\Modding\Project\GMLoader - Xdelta\bin\Release\net8.0-windows\Serilog.dll
+C:\Hub\Modding\Project\GMLoader - Xdelta\bin\Release\net8.0-windows\Serilog.Sinks.Console.dll
+C:\Hub\Modding\Project\GMLoader - Xdelta\bin\Release\net8.0-windows\Serilog.Sinks.File.dll
+C:\Hub\Modding\Project\GMLoader - Xdelta\bin\Release\net8.0-windows\xdelta3.net.dll
+C:\Hub\Modding\Project\GMLoader - Xdelta\bin\Release\net8.0-windows\runtimes\linux-x64\native\libxdelta3.so
+C:\Hub\Modding\Project\GMLoader - Xdelta\bin\Release\net8.0-windows\runtimes\win-x64\native\xdelta3.dll
+C:\Hub\Modding\Project\GMLoader - Xdelta\obj\Release\net8.0-windows\GMLoader - Xdelta.csproj.AssemblyReference.cache
+C:\Hub\Modding\Project\GMLoader - Xdelta\obj\Release\net8.0-windows\GMLoader - Xdelta.GeneratedMSBuildEditorConfig.editorconfig
+C:\Hub\Modding\Project\GMLoader - Xdelta\obj\Release\net8.0-windows\GMLoader - Xdelta.AssemblyInfoInputs.cache
+C:\Hub\Modding\Project\GMLoader - Xdelta\obj\Release\net8.0-windows\GMLoader - Xdelta.AssemblyInfo.cs
+C:\Hub\Modding\Project\GMLoader - Xdelta\obj\Release\net8.0-windows\GMLoader - Xdelta.csproj.CoreCompileInputs.cache
+C:\Hub\Modding\Project\GMLoader - Xdelta\obj\Release\net8.0-windows\GMLoader.B8AC345A.Up2Date
+C:\Hub\Modding\Project\GMLoader - Xdelta\obj\Release\net8.0-windows\GMLoader - Xdelta.dll
+C:\Hub\Modding\Project\GMLoader - Xdelta\obj\Release\net8.0-windows\refint\GMLoader - Xdelta.dll
+C:\Hub\Modding\Project\GMLoader - Xdelta\obj\Release\net8.0-windows\GMLoader - Xdelta.pdb
+C:\Hub\Modding\Project\GMLoader - Xdelta\obj\Release\net8.0-windows\GMLoader - Xdelta.genruntimeconfig.cache
+C:\Hub\Modding\Project\GMLoader - Xdelta\obj\Release\net8.0-windows\ref\GMLoader - Xdelta.dll

@@ -1,0 +1,140 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "GMLoader - Xdelta/1.0.0": {
+        "dependencies": {
+          "Serilog": "4.1.0-dev-02238",
+          "Serilog.Sinks.Console": "6.0.0",
+          "Serilog.Sinks.File": "6.0.0",
+          "xdelta3.net": "1.0.1"
+        },
+        "runtime": {
+          "GMLoader - Xdelta.dll": {}
+        }
+      },
+      "Serilog/4.1.0-dev-02238": {
+        "runtime": {
+          "lib/net8.0/Serilog.dll": {
+            "assemblyVersion": "4.1.0.0",
+            "fileVersion": "4.1.0.0"
+          }
+        }
+      },
+      "Serilog.Sinks.Console/6.0.0": {
+        "dependencies": {
+          "Serilog": "4.1.0-dev-02238"
+        },
+        "runtime": {
+          "lib/net8.0/Serilog.Sinks.Console.dll": {
+            "assemblyVersion": "6.0.0.0",
+            "fileVersion": "6.0.0.0"
+          }
+        }
+      },
+      "Serilog.Sinks.File/6.0.0": {
+        "dependencies": {
+          "Serilog": "4.1.0-dev-02238"
+        },
+        "runtime": {
+          "lib/net8.0/Serilog.Sinks.File.dll": {
+            "assemblyVersion": "6.0.0.0",
+            "fileVersion": "6.0.0.0"
+          }
+        }
+      },
+      "System.Memory/4.5.3": {},
+      "xdelta3.net/1.0.1": {
+        "dependencies": {
+          "System.Memory": "4.5.3",
+          "xdelta3.net.redist.linux.x64": "1.0.1",
+          "xdelta3.net.redist.windows.x64": "1.0.1"
+        },
+        "runtime": {
+          "lib/netstandard2.0/xdelta3.net.dll": {
+            "assemblyVersion": "1.0.1.0",
+            "fileVersion": "1.0.1.0"
+          }
+        }
+      },
+      "xdelta3.net.redist.linux.x64/1.0.1": {
+        "runtimeTargets": {
+          "runtimes/linux-x64/native/libxdelta3.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "xdelta3.net.redist.windows.x64/1.0.1": {
+        "runtimeTargets": {
+          "runtimes/win-x64/native/xdelta3.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "GMLoader - Xdelta/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Serilog/4.1.0-dev-02238": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-R5O6P14RaWfuF6aLPBptHJbCIh2mziGrrxuU6gPg7J7EywNc4LFFRnywOEONYdjpHj0CphnKfFYRoi96fOb8eA==",
+      "path": "serilog/4.1.0-dev-02238",
+      "hashPath": "serilog.4.1.0-dev-02238.nupkg.sha512"
+    },
+    "Serilog.Sinks.Console/6.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-fQGWqVMClCP2yEyTXPIinSr5c+CBGUvBybPxjAGcf7ctDhadFhrQw03Mv8rJ07/wR5PDfFjewf2LimvXCDzpbA==",
+      "path": "serilog.sinks.console/6.0.0",
+      "hashPath": "serilog.sinks.console.6.0.0.nupkg.sha512"
+    },
+    "Serilog.Sinks.File/6.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-lxjg89Y8gJMmFxVkbZ+qDgjl+T4yC5F7WSLTvA+5q0R04tfKVLRL/EHpYoJ/MEQd2EeCKDuylBIVnAYMotmh2A==",
+      "path": "serilog.sinks.file/6.0.0",
+      "hashPath": "serilog.sinks.file.6.0.0.nupkg.sha512"
+    },
+    "System.Memory/4.5.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-3oDzvc/zzetpTKWMShs1AADwZjQ/36HnsufHRPcOjyRAAMLDlu2iD33MBI2opxnezcVUtXyqDXXjoFMOU9c7SA==",
+      "path": "system.memory/4.5.3",
+      "hashPath": "system.memory.4.5.3.nupkg.sha512"
+    },
+    "xdelta3.net/1.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-tNNdfrI+7Jgs94MNJg4+YcmiDONmwugcG7ozsoVN1F/A09ECehsgljaeM+ddOScdM7YSnTYxRD59frcjG5kPmA==",
+      "path": "xdelta3.net/1.0.1",
+      "hashPath": "xdelta3.net.1.0.1.nupkg.sha512"
+    },
+    "xdelta3.net.redist.linux.x64/1.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-TPpn26opHkf0sjmHNestS33A3gv7vsgDyk+HYGlbRxdNEsQYLUAVh4wG/p+dLvWJn9SZAj0HsQdUgA19p9Fljw==",
+      "path": "xdelta3.net.redist.linux.x64/1.0.1",
+      "hashPath": "xdelta3.net.redist.linux.x64.1.0.1.nupkg.sha512"
+    },
+    "xdelta3.net.redist.windows.x64/1.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-MmHKaSicLZjqC+6Wmbf0WaQYwX+ucptt71ltNUadoHVKxLlmiF1unCKHmV3SRRw1Bzaxuf30DizrBlEJCF+IJA==",
+      "path": "xdelta3.net.redist.windows.x64/1.0.1",
+      "hashPath": "xdelta3.net.redist.windows.x64.1.0.1.nupkg.sha512"
+    }
+  }
+}
