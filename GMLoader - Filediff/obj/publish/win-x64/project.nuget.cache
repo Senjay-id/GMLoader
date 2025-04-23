@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "dgSpecHash": "PqF7NVsVXnU=",
+  "success": true,
+  "projectFilePath": "C:\\Hub\\Modding\\Projects\\GMLoader - Filediff\\GMLoader - Filediff.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Senjay\\.nuget\\packages\\castle.core\\5.1.1\\castle.core.5.1.1.nupkg.sha512",
+    "C:\\Users\\Senjay\\.nuget\\packages\\config.net\\5.3.0-pre.1\\config.net.5.3.0-pre.1.nupkg.sha512",
+    "C:\\Users\\Senjay\\.nuget\\packages\\microsoft.net.illink.tasks\\8.0.14\\microsoft.net.illink.tasks.8.0.14.nupkg.sha512",
+    "C:\\Users\\Senjay\\.nuget\\packages\\serilog\\4.1.0-dev-02238\\serilog.4.1.0-dev-02238.nupkg.sha512",
+    "C:\\Users\\Senjay\\.nuget\\packages\\serilog.sinks.console\\6.0.0\\serilog.sinks.console.6.0.0.nupkg.sha512",
+    "C:\\Users\\Senjay\\.nuget\\packages\\serilog.sinks.file\\6.0.0\\serilog.sinks.file.6.0.0.nupkg.sha512",
+    "C:\\Users\\Senjay\\.nuget\\packages\\standart.hash.xxhash\\4.0.5\\standart.hash.xxhash.4.0.5.nupkg.sha512",
+    "C:\\Users\\Senjay\\.nuget\\packages\\system.configuration.configurationmanager\\8.0.1\\system.configuration.configurationmanager.8.0.1.nupkg.sha512",
+    "C:\\Users\\Senjay\\.nuget\\packages\\system.diagnostics.eventlog\\8.0.1\\system.diagnostics.eventlog.8.0.1.nupkg.sha512",
+    "C:\\Users\\Senjay\\.nuget\\packages\\system.security.cryptography.protecteddata\\8.0.0\\system.security.cryptography.protecteddata.8.0.0.nupkg.sha512",
+    "C:\\Users\\Senjay\\.nuget\\packages\\vyaml\\1.0.0\\vyaml.1.0.0.nupkg.sha512",
+    "C:\\Users\\Senjay\\.nuget\\packages\\vyaml.annotations\\1.0.0\\vyaml.annotations.1.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

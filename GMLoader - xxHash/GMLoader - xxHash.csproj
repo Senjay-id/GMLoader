@@ -11,6 +11,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Standart.Hash.xxHash" Version="4.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="Standart.Hash.xxHash">
       <HintPath>..\GMLoader\lib\Standart.Hash.xxHash.dll</HintPath>
     </Reference>

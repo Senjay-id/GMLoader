@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "DBU/2sOuJNI=",
+  "success": true,
+  "projectFilePath": "C:\\Hub\\Modding\\Project\\GMLoader - xxHash\\GMLoader - xxHash.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Senjay\\.nuget\\packages\\microsoft.net.illink.tasks\\8.0.15\\microsoft.net.illink.tasks.8.0.15.nupkg.sha512",
+    "C:\\Users\\Senjay\\.nuget\\packages\\standart.hash.xxhash\\4.0.5\\standart.hash.xxhash.4.0.5.nupkg.sha512"
+  ],
+  "logs": []
+}

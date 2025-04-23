@@ -1,0 +1,26 @@
+C:\Hub\Modding\Projects\GMLoader - Filediff\bin\Release\net8.0-windows\win-x64\GMLoader - Filediff.exe
+C:\Hub\Modding\Projects\GMLoader - Filediff\bin\Release\net8.0-windows\win-x64\GMLoader - Filediff.deps.json
+C:\Hub\Modding\Projects\GMLoader - Filediff\bin\Release\net8.0-windows\win-x64\GMLoader - Filediff.runtimeconfig.json
+C:\Hub\Modding\Projects\GMLoader - Filediff\bin\Release\net8.0-windows\win-x64\GMLoader - Filediff.dll
+C:\Hub\Modding\Projects\GMLoader - Filediff\bin\Release\net8.0-windows\win-x64\GMLoader - Filediff.pdb
+C:\Hub\Modding\Projects\GMLoader - Filediff\bin\Release\net8.0-windows\win-x64\Castle.Core.dll
+C:\Hub\Modding\Projects\GMLoader - Filediff\bin\Release\net8.0-windows\win-x64\Config.Net.dll
+C:\Hub\Modding\Projects\GMLoader - Filediff\bin\Release\net8.0-windows\win-x64\Serilog.dll
+C:\Hub\Modding\Projects\GMLoader - Filediff\bin\Release\net8.0-windows\win-x64\Serilog.Sinks.Console.dll
+C:\Hub\Modding\Projects\GMLoader - Filediff\bin\Release\net8.0-windows\win-x64\Serilog.Sinks.File.dll
+C:\Hub\Modding\Projects\GMLoader - Filediff\bin\Release\net8.0-windows\win-x64\Standart.Hash.xxHash.dll
+C:\Hub\Modding\Projects\GMLoader - Filediff\bin\Release\net8.0-windows\win-x64\System.Configuration.ConfigurationManager.dll
+C:\Hub\Modding\Projects\GMLoader - Filediff\bin\Release\net8.0-windows\win-x64\System.Diagnostics.EventLog.dll
+C:\Hub\Modding\Projects\GMLoader - Filediff\bin\Release\net8.0-windows\win-x64\VYaml.dll
+C:\Hub\Modding\Projects\GMLoader - Filediff\bin\Release\net8.0-windows\win-x64\VYaml.Annotations.dll
+C:\Hub\Modding\Projects\GMLoader - Filediff\obj\Release\net8.0-windows\win-x64\GMLoader - Filediff.csproj.AssemblyReference.cache
+C:\Hub\Modding\Projects\GMLoader - Filediff\obj\Release\net8.0-windows\win-x64\GMLoader - Filediff.GeneratedMSBuildEditorConfig.editorconfig
+C:\Hub\Modding\Projects\GMLoader - Filediff\obj\Release\net8.0-windows\win-x64\GMLoader - Filediff.AssemblyInfoInputs.cache
+C:\Hub\Modding\Projects\GMLoader - Filediff\obj\Release\net8.0-windows\win-x64\GMLoader - Filediff.AssemblyInfo.cs
+C:\Hub\Modding\Projects\GMLoader - Filediff\obj\Release\net8.0-windows\win-x64\GMLoader - Filediff.csproj.CoreCompileInputs.cache
+C:\Hub\Modding\Projects\GMLoader - Filediff\obj\Release\net8.0-windows\win-x64\GMLoader.57CB6922.Up2Date
+C:\Hub\Modding\Projects\GMLoader - Filediff\obj\Release\net8.0-windows\win-x64\GMLoader - Filediff.dll
+C:\Hub\Modding\Projects\GMLoader - Filediff\obj\Release\net8.0-windows\win-x64\refint\GMLoader - Filediff.dll
+C:\Hub\Modding\Projects\GMLoader - Filediff\obj\Release\net8.0-windows\win-x64\GMLoader - Filediff.pdb
+C:\Hub\Modding\Projects\GMLoader - Filediff\obj\Release\net8.0-windows\win-x64\GMLoader - Filediff.genruntimeconfig.cache
+C:\Hub\Modding\Projects\GMLoader - Filediff\obj\Release\net8.0-windows\win-x64\ref\GMLoader - Filediff.dll
