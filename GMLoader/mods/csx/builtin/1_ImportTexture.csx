@@ -12,6 +12,20 @@
 // Texture packer by Samuel Roy
 // Uses code from https://github.com/mfascia/TexturePacker
 
+string importFolder = texturesPath;
+
+string[] dirFiles = Directory.GetFiles(importFolder);
+if (dirFiles.Length == 0)
+{
+    Log.Debug("The texture import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importFolder)) + " , skipping the process");
+    return;
+}
+else if (!dirFiles.Any(x => x.EndsWith(".png", StringComparison.OrdinalIgnoreCase) || x.EndsWith(".gif", StringComparison.OrdinalIgnoreCase)))
+{
+    Log.Debug("The texture import folder doesn't have any texture files, skipping the process.");
+    return;
+}
+
 Stopwatch stopwatch = new Stopwatch();
 TimeSpan elapsed;
 public static int frame; //Cannot be uint because Rectangle constructor parameter expects int
@@ -90,7 +104,7 @@ if (coreCount == 0)
 
 var options = new ParallelOptions { MaxDegreeOfParallelism = coreCount }; // Adjust the degree of parallelism
 
-string importFolder = texturesPath;
+
 
 CheckValidity();
 
@@ -577,6 +591,7 @@ public class Packer
 		FileInfo[] filteredFiles = files.Where(file => 
     		spritesToImport.Contains(file.Name, StringComparer.OrdinalIgnoreCase)).ToArray();
 		string fullName;
+		string nostripStr = "nostrip";
 
 		foreach (FileInfo fi in files) // Uses files instead of filteredFiles to check for missing sprite parameter entry in the config
 		{
@@ -632,71 +647,72 @@ public class Packer
 			{
 				int frames = 1;
 				string spriteName = Path.GetFileNameWithoutExtension(fi.Name);
-				if (spriteDictionary.TryGetValue(spriteName, out SpriteData spriteProps))
+				DirectoryInfo grandparentDir = fi.Directory?.Parent;
+				if (Path.GetDirectoryName(grandparentDir.FullName) != nostripStr)
 				{
-					//Log.Error($"Properties found for {spriteName}");
-					frames = spriteProps.yml_frame.Value;
+					if (spriteDictionary.TryGetValue(spriteName, out SpriteData spriteProps))
+					{
+						//Log.Error($"Properties found for {spriteName}");
+						frames = spriteProps.yml_frame.Value;
+					}
+					else
+					{
+						Log.Debug($"No sprite properties found for {spriteName}, default values will be used.");
+					}
+
+					if (frames <= 0)
+					{
+						Log.Error(fullName + " has 0 frames.");
+						throw new Exception();
+					}
+
+					if (!isSprite && frames > 1)
+					{
+						Log.Error(fullName + " is not a sprite, but has more than 1 frame.");
+						throw new Exception();
+					}
+
+					Image img = Image.FromFile(fullName);
+					if (img is null)
+					{
+						continue;
+					}
+
+					if ((img.Width % frames) > 0)
+					{
+						Log.Error($"{fullName} has a width not divisible by the number of frames. Width:{img.Width} Frames: {frames} result: {img.Width % frames}");
+						continue;
+					}
+
+					Bitmap sheetBitmap = new Bitmap(img);
+
+					string dirName = Path.GetDirectoryName(fullName);
+
+					int frameWidth = img.Width / frames;
+					int frameHeight = img.Height;
+					for (int i = 0; i < frames; i++)
+					{
+						AddSource(
+							sheetBitmap.Clone(
+								new Rectangle(i * frameWidth, 0, frameWidth, frameHeight),
+								sheetBitmap.PixelFormat
+							),
+							Path.Join(dirName,
+								isSprite ?
+									(spriteName + "_" + i + ".png") : (spriteName + ".png")
+							)
+						);
+					}
 				}
 				else
 				{
-					Log.Debug($"No sprite properties found for {spriteName}, default values will be used.");
-				}
-
-				if (frames <= 0)
-				{
-					Log.Error(fullName + " has 0 frames.");
-					throw new Exception();
-				}
-
-				if (!isSprite && frames > 1)
-				{
-					Log.Error(fullName + " is not a sprite, but has more than 1 frame.");
-					throw new Exception();
-				}
-
-				Image img = Image.FromFile(fullName);
-				if (img is null)
-				{
-					continue;
-				}
-
-				if ((img.Width % frames) > 0)
-				{
-					Log.Error($"{fullName} has a width not divisible by the number of frames. Width:{img.Width} Frames: {frames} result: {img.Width % frames}");
-					continue;
-				}
-
-				Bitmap sheetBitmap = new Bitmap(img);
-
-				string dirName = Path.GetDirectoryName(fullName);
-
-				int frameWidth = img.Width / frames;
-				int frameHeight = img.Height;
-				for (int i = 0; i < frames; i++)
-				{
-					AddSource(
-						sheetBitmap.Clone(
-							new Rectangle(i * frameWidth, 0, frameWidth, frameHeight),
-							sheetBitmap.PixelFormat
-						),
-						Path.Join(dirName,
-							isSprite ?
-								(spriteName + "_" + i + ".png") : (spriteName + ".png")
-						)
-					);
-				}
-				// fix me maybe
-				/*
-				else
-				{
-					Log.Error($"{Path.GetFileName(fullName)} does not match from regex");
+					// Handle nostrip style sprites
 					Image img = Image.FromFile(fullName);
 					if (img != null)
 					{
 						AddSource(img, fullName);
 					}
 				}
-				*/
 			}
 		}
 	}
@@ -909,10 +925,11 @@ void CheckValidity()
 
     // Cache files from the import folder once
     string[] allFiles = Directory.GetFiles(importFolder, "*.*", SearchOption.AllDirectories);
-    string[] spriteDataFiles = Directory.GetFiles(importFolder, "*.json*", SearchOption.AllDirectories);
+    //string[] spriteDataFiles = Directory.GetFiles(importFolder, "*.json*", SearchOption.AllDirectories);
     var fileSet = new HashSet<string>(allFiles.Select(Path.GetFileName));  // Create a set of filenames for quick lookup
 
 	// fix me later maybe
+	/*
 	if (hasSpriteStripFiles)
 	{
 		foreach (string file in spriteDataFiles)
@@ -949,6 +966,7 @@ void CheckValidity()
 			spriteList.Add(spriteName);
 		}
 	}
+	*/
 
     foreach (string file in dirFiles)
     {

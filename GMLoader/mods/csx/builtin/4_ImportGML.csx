@@ -1,5 +1,4 @@
-bool hasGML = true;
-//bool hasCollisionGML = true;
+
 
 mkDir(gmlCodePath);
 string[] dirFiles = Directory.GetFiles(gmlCodePath, "*.gml");
@@ -12,15 +11,13 @@ if (!compileGML)
 else if (dirFiles.Length == 0)
 {
     Log.Debug("The GML import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, gmlCodePath)) + " , skipping the process");
-    hasGML = false;
+    return;
 }
-else if (!dirFiles.Any(x => x.EndsWith(".gml")))
+else if (!dirFiles.Any(x => x.EndsWith(".gml", StringComparison.OrdinalIgnoreCase)))
 {
     Log.Debug("The GML import folder doesn't have any GML files, skipping the process.");
-    hasGML = false;
+    return;
 }
-
-
 
 await Task.Run(() =>
 {
