@@ -18,6 +18,7 @@ Contains User guide and Modders guide
 ### Building
 * Clone the project
 * Compile [UndertalModLib and Underanalyzer](https://github.com/krzys-h/UndertaleModTool) then put their dll inside the lib folder
+* Add the reference of umtlib and underanalyzer
 * Open the solution and build
 
 ### Credits
