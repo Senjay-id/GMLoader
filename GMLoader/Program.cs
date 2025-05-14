@@ -28,6 +28,8 @@ using Underanalyzer.Decompiler;
 using System.Text;
 using VYaml.Serialization;
 using VYaml.Annotations;
+using UndertaleModLib.Compiler;
+using Microsoft.CodeAnalysis;
 #endregion
 
 namespace GMLoader;
@@ -239,8 +241,9 @@ public class GMLoaderProgram
     public static string backgroundsConfigPath { get; set; }
     public static string shaderPath { get; set; }
     public static string configPath { get; set; }
+    public static DecompileSettings defaultDecompSettings { get; set; }
     public static string gmlCodePath { get; set; }
-    public static string GMLCodePatchPath { get; set; }
+    public static string gmlCodePatchPath { get; set; }
     public static string collisionPath { get; set; }
     public static string asmPath { get; set; }
     public static string prependGMLPath { get; set; }
@@ -277,6 +280,8 @@ public class GMLoaderProgram
     public static uint defaultBGTileCount { get; set; }
     public static int defaultBGFrameTime { get; set; }
 
+    public static Dictionary<string, int> moddedTextureCounts = new Dictionary<string, int>();
+    public static List<string> vanillaSpriteList = new List<string>();
     public static List<string> spriteList = new List<string>();
     public static List<string> backgroundList = new List<string>();
     public static Dictionary<string, SpriteData> spriteDictionary = new Dictionary<string, SpriteData>();
@@ -287,7 +292,7 @@ public class GMLoaderProgram
 
     #endregion
 
-    static async Task Main()
+    static void Main()
     {
         try
         {
@@ -363,7 +368,7 @@ public class GMLoaderProgram
             shaderPath = config.ShaderDirectory;
             configPath = config.ConfigDirectory;
             gmlCodePath = config.GMLCodeDirectory;
-            GMLCodePatchPath = config.GMLCodePatchDirectory;
+            gmlCodePatchPath = config.GMLCodePatchDirectory;
             collisionPath = config.CollisionDirectory;
             asmPath = config.ASMDirectory;
             prependGMLPath = config.PrependGMLDirectory;
@@ -405,7 +410,7 @@ public class GMLoaderProgram
             mkDir(texturesPath);
             mkDir(texturesConfigPath);
             mkDir(gmlCodePath);
-            mkDir(GMLCodePatchPath);
+            mkDir(gmlCodePatchPath);
             mkDir(noStripTexturesPath);
             mkDir(backgroundsConfigPath);
             mkDir(roomPath);
@@ -450,7 +455,7 @@ public class GMLoaderProgram
             if (exportMode)
             {
                 Console.Title = $"GMLoader  - Export Mode";
-
+                
                 if (!File.Exists(exportTextureScriptPath) || !File.Exists(exportGameObjectScriptPath) || 
                     !File.Exists(exportCodeScriptPath) || !File.Exists(exportAudioScriptPath) || 
                     !File.Exists(exportRoomScriptPath))
@@ -489,15 +494,15 @@ public class GMLoaderProgram
                 invalidSpriteSize = 0;
 
                 if (exportGameObject)
-                    await RunCSharpFile(exportGameObjectScriptPath);
+                    RunCSharpFile(exportGameObjectScriptPath);
                 if (exportAudio)
-                    await RunCSharpFile(exportAudioScriptPath);
+                    RunCSharpFile(exportAudioScriptPath);
                 if (exportCode)
-                    await RunCSharpFile(exportCodeScriptPath);
+                    RunCSharpFile(exportCodeScriptPath);
                 if (exportTexture)
-                    await RunCSharpFile(exportTextureScriptPath);
+                    RunCSharpFile(exportTextureScriptPath);
                 if (exportRoom)
-                    await RunCSharpFile(exportRoomScriptPath);
+                    RunCSharpFile(exportRoomScriptPath);
 
                 if (!exportGameObject && !exportCode && !exportTexture && !exportAudio && !exportRoom)
                 {
@@ -560,6 +565,13 @@ public class GMLoaderProgram
                 Log.Information($"Backup of the data has been created at {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, backupDataPath))}");
             }
 
+            defaultDecompSettings = new Underanalyzer.Decompiler.DecompileSettings()
+            {
+                RemoveSingleLineBlockBraces = true,
+                EmptyLineAroundBranchStatements = true,
+                EmptyLineBeforeSwitchCases = true,
+            };
+
             Console.Title = $"GMLoader  -  {Data.GeneralInfo.Name.Content}";
             Log.Information($"Loaded game {Data.GeneralInfo.Name.Content}");
 
@@ -567,6 +579,7 @@ public class GMLoaderProgram
             ScriptOptionsInitialize();
             invalidXdeltaNames = new List<string>();
             invalidXdelta = 0;
+
             //Compile users script before builtin scripts
             if (dirPreCSXFiles.Length != 0)
             {
@@ -575,7 +588,7 @@ public class GMLoaderProgram
                     Log.Information("Loading pre-CSX Scripts.");
                     foreach (string file in dirPreCSXFiles)
                     {
-                        await RunCSharpFile(file);
+                        RunCSharpFile(file);
                     }
                 }
                 else
@@ -599,10 +612,10 @@ public class GMLoaderProgram
                 {
                     Log.Information("Loading builtin-CSX scripts.");
                     // Had to be done on GMLoader's side because of VYaml issues
-                    await importGraphic();
+                    importGraphic();
                     foreach (string file in dirBuiltInCSXFiles)
                     {
-                        await RunCSharpFile(file);
+                        RunCSharpFile(file);
                     }
                 }
                 else
@@ -619,8 +632,6 @@ public class GMLoaderProgram
                 Log.Information($"No builtin-CSX script file found at {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importBuiltInCSXPath))} , skipping the process.");
             }
 
-            await importConfigDefinedCode();
-
             //Compile users script after builtin scripts
 
             if (dirPostCSXFiles.Length != 0)
@@ -631,7 +642,7 @@ public class GMLoaderProgram
                     Log.Information("Loading post-CSX Scripts.");
                     foreach (string file in dirPostCSXFiles)
                     {
-                        await RunCSharpFile(file);
+                        RunCSharpFile(file);
                     }
                 }
                 else
@@ -659,7 +670,7 @@ public class GMLoaderProgram
                     Log.Information("Loading CSX Scripts after compilation.");
                     foreach (string file in dirAfterCSXFiles)
                     {
-                        await RunCSharpFile(file);
+                        RunCSharpFile(file);
                     }
                 }
                 else
@@ -711,69 +722,103 @@ public class GMLoaderProgram
         }
     }
 
-    private static async Task importConfigDefinedCode()
+    public static void importConfigDefinedCode(UndertaleModLib.Compiler.CodeImportGroup importgroup)
     {
-        string[] configFIles = Directory.GetFiles(GMLCodePatchPath, "*.yaml*", SearchOption.TopDirectoryOnly);
+        string[] configFiles = Directory.GetFiles(gmlCodePatchPath, "*.yaml*", SearchOption.TopDirectoryOnly);
 
-        if (configFIles.Length == 0)
+        if (configFiles.Length == 0)
         {
-            Log.Debug($"The config files are empty, at {GMLCodePatchPath}, skipping...");
+            Log.Debug($"The config files are empty, at {gmlCodePatchPath}, skipping...");
             return;
         }
 
         Log.Information("Executing built-in ImportCodePatch");
+        Console.Title = $"GMLoader - Deserializing code configuration files";
 
-        Log.Information("Deserializing code configuration files, please close GMLoader if it takes more than 5 second for a config file.");
-        Console.Title = $"GMLoader - Deserializing code configuration files, please close GMLoader if it takes more than 5 second for a config file";
-
-        UndertaleModLib.Compiler.CodeImportGroup importGroup = new(Data)
+        foreach (string file in configFiles)
         {
-            ThrowOnNoOpFindReplace = true
-        };
-
-        foreach (string file in configFIles) 
-        {
-            string? type; string? find; string code; bool caseSensitive;
-            byte[] yamlBytes = File.ReadAllBytes(file);
-            Log.Information($"Deserializing {Path.GetFileName(file)}");
-            var deserialized = YamlSerializer.Deserialize<Dictionary<string, CodeData>>(yamlBytes);
-            
-            foreach (var (codeName, configs) in deserialized)
+            try
             {
-                Log.Information($"Patching {codeName}");
-                type = configs.yml_type ?? "";
-                find = configs.yml_find ?? "";
-                code = configs.yml_code; // It can be empty string
-                caseSensitive = configs.yml_casesensitive ?? true;
+                byte[] yamlBytes = File.ReadAllBytes(file);
+                Log.Information($"Deserializing {Path.GetFileName(file)}");
 
-                switch (type)
+                // Deserialize the YAML content
+                var yamlContent = YamlSerializer.Deserialize<Dictionary<string, List<CodeData>>>(yamlBytes);
+
+                // Iterate through each script and its patches
+                foreach (KeyValuePair<string, List<CodeData>> scriptEntry in yamlContent)
                 {
-                    case "findreplace":
-                        importGroup.QueueFindReplace(codeName, configs.yml_find, configs.yml_code, caseSensitive);
-                        break;
-                    case "regex":
-                        importGroup.QueueRegexFindReplace(codeName, configs.yml_find, configs.yml_code, caseSensitive);
-                        break;
-                    case "append":
-                        importGroup.QueueAppend(codeName, configs.yml_code);
-                        break;
-                    case "prepend":
-                        importGroup.QueuePrepend(codeName, configs.yml_code);
-                        break;
-                    default:
-                        Log.Error($"Unknown type '{type}' for {codeName}, skipping");
-                        continue;
+                    string scriptName = scriptEntry.Key;
+                    List<CodeData> patches = scriptEntry.Value;
+
+                    foreach (CodeData patch in patches)
+                    {
+                        ProcessCodePatch(importgroup, scriptName, patch);
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                Log.Error($"Failed to process {Path.GetFileName(file)}: {e}");
             }
         }
 
         try
         {
-            importGroup.Import();
+            importgroup.Import();
         }
         catch (Exception e)
         {
-            Log.Error($"An error has occured:\n{e}");
+            Log.Error($"An error has occurred during import:\n{e}");
+        }
+        Console.Title = $"GMLoader  -  {Data.GeneralInfo.Name.Content}";
+    }
+
+    public static void ProcessCodePatch(CodeImportGroup importGroup, string scriptName, CodeData patch)
+    {
+        string type = patch.yml_type ?? "";
+        string find = patch.yml_find;
+        string code = patch.yml_code ?? "";
+        bool caseSensitive = patch.yml_casesensitive ?? true;
+
+        switch (type.ToLowerInvariant())
+        {
+            case "findreplace":
+                if (string.IsNullOrEmpty(find))
+                {
+                    Log.Error($"Find pattern is empty for {scriptName}, skipping");
+                    return;
+                }
+                //Log.Debug($"Processing patch for {scriptName}\ntype: {type}\nfind:\n{find}\ncode:\n{code}");
+                Log.Debug($"Processing patch for {scriptName}\ntype: {type}\nfind:\n{find}");
+                importGroup.QueueFindReplace(scriptName, find, code, caseSensitive);
+                break;
+            case "findreplacetrim":
+                //Log.Debug($"Processing patch for {scriptName}\ntype: {type}\ncode:\n{code}");
+                Log.Debug($"Processing patch for {scriptName}\ntype: {type}\nfind:\n{find}");
+                importGroup.QueueTrimmedLinesFindReplace(scriptName, find, code, caseSensitive);
+                break;
+            case "append":
+                //Log.Debug($"Processing patch for {scriptName}\ntype: {type}\ncode:\n{code}");
+                importGroup.QueueAppend(scriptName, code);
+                break;
+            case "prepend":
+                //Log.Debug($"Processing patch for {scriptName}\ntype: {type}\ncode:\n{code}");
+                importGroup.QueuePrepend(scriptName, code);
+                break;
+            case "findreplaceregex":
+                if (string.IsNullOrEmpty(find))
+                {
+                    Log.Error($"Regex pattern is empty for {scriptName}, skipping");
+                    return;
+                }
+                //Log.Debug($"Processing patch for {scriptName}\ntype: {type}\nfind:\n{find}\ncode:\n{code}");
+                Log.Debug($"Processing patch for {scriptName}\ntype: {type}\nfind:\n{find}");
+                importGroup.QueueRegexFindReplace(scriptName, find, code, caseSensitive);
+                break;
+            default:
+                Log.Error($"Unknown patch type '{type}' for {scriptName}, skipping");
+                break;
         }
     }
 
@@ -812,6 +857,7 @@ public class GMLoaderProgram
                 {
                     spriteFilenames.Add(spritename + pngExt);
                     spriteList.Add(spritename);
+                    moddedTextureCounts[spritename] = configs.yml_frame ?? 1;
 
                     spriteDictionary[spritename] = new SpriteData
                     {
@@ -1000,6 +1046,38 @@ public class GMLoaderProgram
 
         var recreatedData = Xdelta3Lib.Decode(source: originalData, delta: delta).ToArray();
         File.WriteAllBytes(outputFilePath, recreatedData);
+    }
+
+    public static void logCode(string codeName, GlobalDecompileContext context = null)
+    {
+        UndertaleCode code = Data.Code.ByName(codeName);
+
+        if (code == null)
+        {
+            Log.Error($"{codeName} isn't found in the data");
+            return;
+        }
+            
+
+        if (code.ParentEntry is not null)
+        {
+            Log.Error($"// This code entry is a reference to an anonymous function within \"{code.ParentEntry.Name.Content}\", decompile that instead.");
+            return;
+        }
+             
+
+        GlobalDecompileContext globalDecompileContext = context is null ? new(Data) : context;
+
+        try
+        {
+            Log.Information( code != null
+                ? $"\n{codeName}:\n" + new Underanalyzer.Decompiler.DecompileContext(globalDecompileContext, code, 
+                defaultDecompSettings ?? Data.ToolInfo.DecompilerSettings).DecompileToString() : "");
+        }
+        catch (Exception e)
+        {
+            Log.Error("/*\nDECOMPILER FAILED!\n\n" + e.ToString() + "\n*/");
+        }
     }
     #endregion
 
