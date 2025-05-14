@@ -1,5 +1,4 @@
 bool hasGML = true;
-//bool hasCollisionGML = true;
 
 mkDir(prependGMLPath);
 string[] directories = Directory.GetDirectories(prependGMLPath);
@@ -15,23 +14,21 @@ else if (directories.Length == 0)
     hasGML = false;
 }
 
-UndertaleModLib.Compiler.CodeImportGroup importGroup = new(Data);
+UndertaleModLib.Compiler.CodeImportGroup importGroup = new(Data, null, defaultDecompSettings);
 
 if (hasGML)
 {
     string[] directories = Directory.GetDirectories(prependGMLPath);
     
-    await Task.Run(() =>
+    foreach (string directory in directories)
     {
-        foreach (string directory in directories)
+        string[] dirFiles = Directory.GetFiles(directory, "*.gml");
+        foreach (string file in dirFiles)
         {
-            string[] dirFiles = Directory.GetFiles(directory, "*.gml");
-            foreach (string file in dirFiles)
-            {
-                Log.Information($"Prepending {Path.GetFileName(file)} from {Path.GetRelativePath(prependGMLPath, directory)} Folder");
-                importGroup.QueuePrepend(Path.GetFileNameWithoutExtension(file), File.ReadAllText(file));
-            }
-            importGroup.Import(true);
-        }
-    });
+            Log.Information($"Prepending {Path.GetFileName(file)} from {Path.GetRelativePath(prependGMLPath, directory)} Folder");
+            importGroup.QueuePrepend(Path.GetFileNameWithoutExtension(file), File.ReadAllText(file));
+        } 
+    }
+    importGroup.Import(true);
+
 }
