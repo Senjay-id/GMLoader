@@ -18,11 +18,12 @@ UndertaleModLib.Compiler.CodeImportGroup importGroup = new(Data, null, defaultDe
 
 if (hasGML)
 {
-    string[] directories = Directory.GetDirectories(prependGMLPath);
-    
     foreach (string directory in directories)
     {
-        string[] dirFiles = Directory.GetFiles(directory, "*.gml");
+        string[] dirFiles = Directory.GetFiles(directory, "*.gml")
+                                    .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                                    .ToArray();
+        
         foreach (string file in dirFiles)
         {
             Log.Information($"Prepending {Path.GetFileName(file)} from {Path.GetRelativePath(prependGMLPath, directory)} Folder");
@@ -30,5 +31,4 @@ if (hasGML)
         } 
     }
     importGroup.Import(true);
-
 }

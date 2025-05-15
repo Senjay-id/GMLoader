@@ -1,6 +1,10 @@
 mkDir(gmlCodePath);
-string[] dirFiles = Directory.GetFiles(gmlCodePath, "*.gml");
-string[] codeConfigDirFiles = Directory.GetFiles(gmlCodePatchPath, "*.yaml");
+string[] dirFiles = Directory.GetFiles(gmlCodePath, "*.gml")
+                             .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                             .ToArray();
+string[] codeConfigDirFiles = Directory.GetFiles(gmlCodePatchPath, "*.yaml")
+                             .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                             .ToArray();
 
 if (!compileGML)
 {
