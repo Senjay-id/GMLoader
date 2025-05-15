@@ -1,4 +1,4 @@
-﻿#region Using Directives
+#region Using Directives
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Newtonsoft.Json.Linq;
@@ -428,10 +428,21 @@ public class GMLoaderProgram
                 PrintFileTree(modsPath, "", true);
             }
 
-            string[] dirPreCSXFiles = Directory.GetFiles(importPreCSXPath, "*.csx");
-            string[] dirBuiltInCSXFiles = Directory.GetFiles(importBuiltInCSXPath, "*.csx");
-            string[] dirPostCSXFiles = Directory.GetFiles(importPostCSXPath, "*.csx");
-            string[] dirAfterCSXFiles = Directory.GetFiles(importAfterCSXPath, "*.csx");
+            string[] dirPreCSXFiles = Directory.GetFiles(importPreCSXPath, "*.csx")
+                                              .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                                              .ToArray();
+
+            string[] dirBuiltInCSXFiles = Directory.GetFiles(importBuiltInCSXPath, "*.csx")
+                                                 .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                                                 .ToArray();
+
+            string[] dirPostCSXFiles = Directory.GetFiles(importPostCSXPath, "*.csx")
+                                              .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                                              .ToArray();
+
+            string[] dirAfterCSXFiles = Directory.GetFiles(importAfterCSXPath, "*.csx")
+                                               .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                                               .ToArray();
 
             if (!compilePreCSX && !compileBuiltInCSX && !compilePostCSX)
             {
@@ -724,7 +735,9 @@ public class GMLoaderProgram
 
     public static void importConfigDefinedCode(UndertaleModLib.Compiler.CodeImportGroup importgroup)
     {
-        string[] configFiles = Directory.GetFiles(gmlCodePatchPath, "*.yaml*", SearchOption.TopDirectoryOnly);
+        string[] configFiles = Directory.GetFiles(gmlCodePatchPath, "*.yaml*", SearchOption.TopDirectoryOnly)
+                                  .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                                  .ToArray();
 
         if (configFiles.Length == 0)
         {
@@ -1001,8 +1014,16 @@ public class GMLoaderProgram
     }
     private static void PrintFileTree(string path, string indent, bool isLast)
     {
-        string[] files = Directory.GetFiles(path);
-        string[] directories = Directory.GetDirectories(path);
+        // Get and sort files alphabetically (case-insensitive)
+        string[] files = Directory.GetFiles(path)
+                                 .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                                 .ToArray();
+
+        // Get and sort directories alphabetically (case-insensitive), excluding 'lib'
+        string[] directories = Directory.GetDirectories(path)
+                                      .Where(d => !Path.GetFileName(d).Equals("lib", StringComparison.OrdinalIgnoreCase))
+                                      .OrderBy(d => d, StringComparer.OrdinalIgnoreCase)
+                                      .ToArray();
 
         // Process files in the current directory
         for (int i = 0; i < files.Length; i++)
@@ -1012,13 +1033,10 @@ public class GMLoaderProgram
             Log.Debug($"{indent}{prefix}{Path.GetFileName(files[i])}");
         }
 
-        // Process subdirectories, excluding 'lib'
+        // Process subdirectories
         for (int i = 0; i < directories.Length; i++)
         {
             string dirName = Path.GetFileName(directories[i]);
-            if (dirName.Equals("lib", StringComparison.OrdinalIgnoreCase))
-                continue; // Skip 'lib' directory
-
             bool lastDir = i == directories.Length - 1;
             string dirPrefix = lastDir ? "└── " : "├── ";
 
