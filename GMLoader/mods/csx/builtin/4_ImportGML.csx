@@ -22,7 +22,10 @@ else if (!dirFiles.Any(x => x.EndsWith(".gml", StringComparison.OrdinalIgnoreCas
     return;
 }
 
-UndertaleModLib.Compiler.CodeImportGroup importGroup = new(Data, null, defaultDecompSettings);
+UndertaleModLib.Compiler.CodeImportGroup importGroup = new(Data, null, defaultDecompSettings)
+{
+    ThrowOnNoOpFindReplace = true
+};
 
 foreach (string file in dirFiles)
 {
