@@ -1,4 +1,4 @@
-#region Using Directives
+﻿#region Using Directives
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Newtonsoft.Json.Linq;
@@ -713,8 +713,20 @@ public class GMLoaderProgram
 
             if (autoGameStart)
             {
+                var processInfo = new ProcessStartInfo
+                {
+                    FileName = gameExecutable,
+                    WorkingDirectory = Path.GetDirectoryName(gameExecutable),
+                    UseShellExecute = false,
+                };
                 Log.Information($"Game Data has been recompiled, Launching the game...\n\nElapsed time: {stopwatch.Elapsed.TotalSeconds:F2} seconds ({stopwatch.ElapsedMilliseconds} ms)");
-                Process.Start(gameExecutable);
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = gameExecutable,
+                    WorkingDirectory = Path.GetDirectoryName(gameExecutable),
+                    UseShellExecute = true
+                };
+                var process = Process.Start(startInfo);
                 Thread.Sleep(3000);
                 Environment.Exit(0);
             }
