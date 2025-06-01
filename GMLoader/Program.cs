@@ -1,4 +1,4 @@
-﻿#region Using Directives
+#region Using Directives
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Newtonsoft.Json.Linq;
@@ -30,6 +30,7 @@ using VYaml.Serialization;
 using VYaml.Annotations;
 using UndertaleModLib.Compiler;
 using Microsoft.CodeAnalysis;
+using System.Collections.Concurrent;
 #endregion
 
 namespace GMLoader;
@@ -713,12 +714,6 @@ public class GMLoaderProgram
 
             if (autoGameStart)
             {
-                var processInfo = new ProcessStartInfo
-                {
-                    FileName = gameExecutable,
-                    WorkingDirectory = Path.GetDirectoryName(gameExecutable),
-                    UseShellExecute = false,
-                };
                 Log.Information($"Game Data has been recompiled, Launching the game...\n\nElapsed time: {stopwatch.Elapsed.TotalSeconds:F2} seconds ({stopwatch.ElapsedMilliseconds} ms)");
                 var startInfo = new ProcessStartInfo
                 {
@@ -745,7 +740,7 @@ public class GMLoaderProgram
         }
     }
 
-    public static void importConfigDefinedCode(UndertaleModLib.Compiler.CodeImportGroup importgroup)
+    public static void importConfigDefinedCode(UndertaleModLib.Compiler.CodeImportGroup importGroup)
     {
         string[] configFiles = Directory.GetFiles(gmlCodePatchPath, "*.yaml*", SearchOption.TopDirectoryOnly)
                                   .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
@@ -760,25 +755,34 @@ public class GMLoaderProgram
         Log.Information("Executing built-in ImportCodePatch");
         Console.Title = $"GMLoader - Deserializing code configuration files";
 
+        // Dictionary to track modification history
+        Dictionary<string, List<string>> modificationHistory = new Dictionary<string, List<string>>();
+
         foreach (string file in configFiles)
         {
             try
             {
                 byte[] yamlBytes = File.ReadAllBytes(file);
-                Log.Information($"Deserializing {Path.GetFileName(file)}");
+                string fileName = Path.GetFileName(file);
+                Log.Information($"Deserializing {fileName}");
 
-                // Deserialize the YAML content
                 var yamlContent = YamlSerializer.Deserialize<Dictionary<string, List<CodeData>>>(yamlBytes);
 
-                // Iterate through each script and its patches
                 foreach (KeyValuePair<string, List<CodeData>> scriptEntry in yamlContent)
                 {
                     string scriptName = scriptEntry.Key;
                     List<CodeData> patches = scriptEntry.Value;
 
+                    // Track that this file modified the script
+                    if (!modificationHistory.ContainsKey(scriptName))
+                    {
+                        modificationHistory[scriptName] = new List<string>();
+                    }
+                    modificationHistory[scriptName].Add(fileName);
+
                     foreach (CodeData patch in patches)
                     {
-                        ProcessCodePatch(importgroup, scriptName, patch);
+                        ProcessCodePatch(importGroup, fileName, scriptName, patch, modificationHistory);
                     }
                 }
             }
@@ -788,18 +792,10 @@ public class GMLoaderProgram
             }
         }
 
-        try
-        {
-            importgroup.Import();
-        }
-        catch (Exception e)
-        {
-            Log.Error($"An error has occurred during import:\n{e}");
-        }
         Console.Title = $"GMLoader  -  {Data.GeneralInfo.Name.Content}";
     }
 
-    public static void ProcessCodePatch(CodeImportGroup importGroup, string scriptName, CodeData patch)
+    public static void ProcessCodePatch(CodeImportGroup importGroup, string fileName, string scriptName, CodeData patch, Dictionary<string, List<string>> modificationHistory)
     {
         string type = patch.yml_type ?? "";
         string find = patch.yml_find;
@@ -814,21 +810,15 @@ public class GMLoaderProgram
                     Log.Error($"Find pattern is empty for {scriptName}, skipping");
                     return;
                 }
-                //Log.Debug($"Processing patch for {scriptName}\ntype: {type}\nfind:\n{find}\ncode:\n{code}");
-                Log.Debug($"Processing patch for {scriptName}\ntype: {type}\nfind:\n{find}");
                 importGroup.QueueFindReplace(scriptName, find, code, caseSensitive);
                 break;
             case "findreplacetrim":
-                //Log.Debug($"Processing patch for {scriptName}\ntype: {type}\ncode:\n{code}");
-                Log.Debug($"Processing patch for {scriptName}\ntype: {type}\nfind:\n{find}");
                 importGroup.QueueTrimmedLinesFindReplace(scriptName, find, code, caseSensitive);
                 break;
             case "append":
-                //Log.Debug($"Processing patch for {scriptName}\ntype: {type}\ncode:\n{code}");
                 importGroup.QueueAppend(scriptName, code);
                 break;
             case "prepend":
-                //Log.Debug($"Processing patch for {scriptName}\ntype: {type}\ncode:\n{code}");
                 importGroup.QueuePrepend(scriptName, code);
                 break;
             case "findreplaceregex":
@@ -837,13 +827,30 @@ public class GMLoaderProgram
                     Log.Error($"Regex pattern is empty for {scriptName}, skipping");
                     return;
                 }
-                //Log.Debug($"Processing patch for {scriptName}\ntype: {type}\nfind:\n{find}\ncode:\n{code}");
-                Log.Debug($"Processing patch for {scriptName}\ntype: {type}\nfind:\n{find}");
                 importGroup.QueueRegexFindReplace(scriptName, find, code, caseSensitive);
                 break;
             default:
                 Log.Error($"Unknown patch type '{type}' for {scriptName}, skipping");
                 break;
+        }
+
+        try
+        {
+            importGroup.Import();
+        }
+        catch (Exception e)
+        {
+            // Get the modification history for this script
+            string history = modificationHistory.ContainsKey(scriptName)
+                ? string.Join(", ", modificationHistory[scriptName])
+                : "no modifications recorded";
+
+            Log.Error($"An error has occurred on {fileName} while processing {scriptName}\n\n" +
+                     $"Script '{scriptName}' was modified by these files in order: {history}\n\n" +
+                     $"Find string:\n{find}\n\n");
+                     //$"Code string:\n{code}\n\n");
+
+            //Log.Debug($"Exception: \n{e}\n");
         }
     }
 
@@ -855,9 +862,27 @@ public class GMLoaderProgram
         backgroundList.Clear();
         string pngExt = ".png";
 
-        string[] spriteConfigFIles = Directory.GetFiles(texturesConfigPath, "*.yaml*", SearchOption.TopDirectoryOnly);
-        string[] spriteStripStyleConfigFiles = Directory.GetFiles(noStripTexturesPath, "*.yaml*", SearchOption.AllDirectories);
-        string[] backgroundConfigFIles = Directory.GetFiles(backgroundsConfigPath, "*.yaml*", SearchOption.TopDirectoryOnly);
+        var spriteConfigFilesTask = Task.Run(() =>
+            Directory.GetFiles(texturesConfigPath, "*.yaml", SearchOption.TopDirectoryOnly)
+                .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                .ToArray());
+
+        var spriteStripStyleConfigFilesTask = Task.Run(() =>
+            Directory.GetFiles(noStripTexturesPath, "*.yaml", SearchOption.AllDirectories)
+                .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                .ToArray());
+
+        var backgroundConfigFilesTask = Task.Run(() =>
+            Directory.GetFiles(backgroundsConfigPath, "*.yaml", SearchOption.TopDirectoryOnly)
+                .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                .ToArray());
+
+        await Task.WhenAll(spriteConfigFilesTask, spriteStripStyleConfigFilesTask, backgroundConfigFilesTask);
+
+        string[] spriteConfigFIles = await spriteConfigFilesTask;
+        string[] spriteStripStyleConfigFiles = await spriteStripStyleConfigFilesTask;
+        string[] backgroundConfigFIles = await backgroundConfigFilesTask;
+
         if (spriteConfigFIles.Length == 0 && backgroundConfigFIles.Length == 0)
         {
             Log.Debug($"The sprite and background configuration files are empty, at {texturesConfigPath}, skipping texture import");
@@ -866,25 +891,34 @@ public class GMLoaderProgram
 
         Log.Information("Executing built-in ImportGraphic");
 
+        var parallelOptions = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = Environment.ProcessorCount
+        };
+
         if (spriteConfigFIles.Length != 0)
         {
-            //Dictionary<string, SpriteData> spriteParameters = new();
-            List<string> spriteFilenames = new List<string>();
+            var spriteFilenames = new ConcurrentBag<string>();
+            var localSpriteList = new ConcurrentBag<string>();
+            var localModdedTextureCounts = new ConcurrentDictionary<string, int>();
+            var localSpriteDictionary = new ConcurrentDictionary<string, SpriteData>();
 
-            Log.Information("Deserializing sprite configuration files, please close GMLoader if it takes more than 5 second for a config file.");
-            Console.Title = $"GMLoader - Deserializing sprite configuration files, please close GMLoader if it takes more than 5 second for a config file";
-            foreach (string file in spriteConfigFIles)
+            Log.Information("Deserializing sprite configuration files...");
+            Console.Title = $"GMLoader - Deserializing sprite configuration files";
+
+            await Parallel.ForEachAsync(spriteConfigFIles, parallelOptions, async (file, cancellationToken) =>
             {
-                byte[] yamlBytes = File.ReadAllBytes(file);
+                byte[] yamlBytes = await File.ReadAllBytesAsync(file);
                 Log.Information($"Deserializing {Path.GetFileName(file)}");
                 var deserialized = YamlSerializer.Deserialize<Dictionary<string, SpriteData>>(yamlBytes);
+
                 foreach (var (spritename, configs) in deserialized)
                 {
                     spriteFilenames.Add(spritename + pngExt);
-                    spriteList.Add(spritename);
-                    moddedTextureCounts[spritename] = configs.yml_frame ?? 1;
+                    localSpriteList.Add(spritename);
+                    localModdedTextureCounts[spritename] = configs.yml_frame ?? 1;
 
-                    spriteDictionary[spritename] = new SpriteData
+                    localSpriteDictionary[spritename] = new SpriteData
                     {
                         yml_frame = configs.yml_frame ?? 1,
                         yml_x = configs.yml_x ?? defaultSpriteX,
@@ -902,8 +936,12 @@ public class GMLoaderProgram
                         yml_sepmask = configs.yml_sepmask ?? defaultSpriteSepMasksType
                     };
                 }
-            }
+            });
+
+            spriteList.AddRange(localSpriteList);
             spritesToImport = spriteFilenames.ToArray();
+            foreach (var kvp in localModdedTextureCounts) moddedTextureCounts[kvp.Key] = kvp.Value;
+            foreach (var kvp in localSpriteDictionary) spriteDictionary[kvp.Key] = kvp.Value;
         }
         else
         {
@@ -912,23 +950,25 @@ public class GMLoaderProgram
 
         if (backgroundConfigFIles.Length != 0)
         {
-            Dictionary<string, BackgroundData> backgroundParameters = new();
+            var backgroundFilenames = new ConcurrentBag<string>();
+            var localBackgroundList = new ConcurrentBag<string>();
+            var localBackgroundDictionary = new ConcurrentDictionary<string, BackgroundData>();
 
-            List<string> backgroundFilenames = new List<string>();
+            Log.Information("Deserializing backgrounds configuration files...");
+            Console.Title = $"GMLoader - Deserializing backgrounds configuration files";
 
-            Log.Information("Deserializing backgrounds configuration files, please close GMLoader if it takes more than 5 second for a config file.");
-            Console.Title = $"GMLoader - Deserializing backgrounds configuration files, please close GMLoader if it takes more than 5 second for a config file";
-            foreach (string file in backgroundConfigFIles)
+            await Parallel.ForEachAsync(backgroundConfigFIles, parallelOptions, async (file, cancellationToken) =>
             {
-                byte[] yamlBytes = File.ReadAllBytes(file);
+                byte[] yamlBytes = await File.ReadAllBytesAsync(file);
                 Log.Information($"Deserializing {Path.GetFileName(file)}");
                 var deserialized = YamlSerializer.Deserialize<Dictionary<string, BackgroundData>>(yamlBytes);
+
                 foreach (var (backgroundname, configs) in deserialized)
                 {
                     backgroundFilenames.Add(backgroundname + pngExt);
-                    backgroundList.Add(backgroundname);
+                    localBackgroundList.Add(backgroundname);
 
-                    backgroundDictionary[backgroundname] = new BackgroundData
+                    localBackgroundDictionary[backgroundname] = new BackgroundData
                     {
                         yml_tile_count = configs.yml_tile_count ?? defaultBGTileCount,
                         yml_tile_width = configs.yml_tile_width ?? defaultBGTileWidth,
@@ -942,8 +982,11 @@ public class GMLoaderProgram
                         yml_preload = configs.yml_preload ?? defaultBGPreload,
                     };
                 }
-            }
+            });
+
+            backgroundList.AddRange(localBackgroundList);
             backgroundsToImport = backgroundFilenames.ToArray();
+            foreach (var kvp in localBackgroundDictionary) backgroundDictionary[kvp.Key] = kvp.Value;
         }
         else
         {
@@ -952,25 +995,22 @@ public class GMLoaderProgram
 
         if (spriteStripStyleConfigFiles.Length != 0)
         {
-           // Dictionary<string, SpriteData> spriteParameters = new();
-            List<string> spriteFilenames = new List<string>();
-            List<string> noStripStyleSpriteFoldernames = new List<string>();
+            var localSpriteList = new ConcurrentBag<string>();
+            var localSpriteDictionary = new ConcurrentDictionary<string, SpriteData>();
 
-            Log.Information("Deserializing nostrip style sprite configuration files, please close GMLoader if it takes more than 5 second for a config file.");
-            Console.Title = $"GMLoader - Deserializing nostrip style sprite configuration files, please close GMLoader if it takes more than 5 second for a config file";
+            Log.Information("Deserializing nostrip style sprite configuration files...");
+            Console.Title = $"GMLoader - Deserializing nostrip style sprite configuration files";
 
-            foreach (string file in spriteStripStyleConfigFiles)
+            await Parallel.ForEachAsync(spriteStripStyleConfigFiles, parallelOptions, async (file, cancellationToken) =>
             {
-                byte[] yamlBytes = File.ReadAllBytes(file);
+                byte[] yamlBytes = await File.ReadAllBytesAsync(file);
                 Log.Information($"Deserializing {Path.GetFileName(file)}");
                 var deserialized = YamlSerializer.Deserialize<SpriteData>(yamlBytes);
                 string spriteName = Path.GetDirectoryName(file);
-                //noStripStyleSpriteFoldernames.Add(spriteName);
-                //noStripStyleSpritesToImport = noStripStyleSpriteFoldernames.ToArray();
 
-                spriteList.Add(spriteName);
+                localSpriteList.Add(spriteName);
 
-                spriteDictionary[spriteName] = new SpriteData
+                localSpriteDictionary[spriteName] = new SpriteData
                 {
                     yml_x = deserialized.yml_x ?? defaultSpriteX,
                     yml_y = deserialized.yml_y ?? defaultSpriteY,
@@ -986,15 +1026,17 @@ public class GMLoaderProgram
                     yml_bboxtop = deserialized.yml_bboxtop ?? defaultSpriteBoundingBoxTop,
                     yml_sepmask = deserialized.yml_sepmask ?? defaultSpriteSepMasksType
                 };
-                
-            }
+            });
+
+            spriteList.AddRange(localSpriteList);
+            foreach (var kvp in localSpriteDictionary) spriteDictionary[kvp.Key] = kvp.Value;
         }
         else
         {
             Log.Debug("The nostrip style sprite configuration files are empty, skipping...");
         }
 
-            Console.Title = $"GMLoader  -  {Data.GeneralInfo.Name.Content}";
+        Console.Title = $"GMLoader - {Data.GeneralInfo.Name.Content}";
     }
 
     #region Helper Methods
