@@ -319,7 +319,7 @@ void ReadLayers(ref Utf8JsonReader reader)
             newLayer.VSpeed = ReadFloat(ref reader);
             newLayer.IsVisible = ReadBool(ref reader);
 
-
+            newLayer.ParentRoom = newRoom;
             newLayer.LayerName = (layerName == null) ? null : new UndertaleString(layerName);
 
             if ((layerName != null) && !Data.Strings.Any(s => s == newLayer.LayerName))
@@ -361,6 +361,7 @@ void ReadBackgroundLayer(ref Utf8JsonReader reader, UndertaleRoom.Layer newLayer
     ReadAnticipateJSONObject(ref reader, JsonTokenType.StartObject);
 
     UndertaleRoom.Layer.LayerBackgroundData newLayerData = new UndertaleRoom.Layer.LayerBackgroundData();
+    newLayerData.ParentLayer = newLayer;
 
     newLayerData.Visible = ReadBool(ref reader);
     newLayerData.Foreground = ReadBool(ref reader);
@@ -376,8 +377,6 @@ void ReadBackgroundLayer(ref Utf8JsonReader reader, UndertaleRoom.Layer newLayer
     newLayerData.AnimationSpeedType = (AnimationSpeedType) ReadNum(ref reader);
 
     newLayerData.Sprite = (spriteName == null) ? null : Data.Sprites.ByName(spriteName);
-
-    newLayerData.ParentLayer = newLayer;
 
     ReadAnticipateJSONObject(ref reader, JsonTokenType.EndObject);
 
