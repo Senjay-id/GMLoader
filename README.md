@@ -1,4 +1,4 @@
-GMLoader is a program that can recompile non-YYC GM:Studio games data using [UndertalModLib](https://github.com/krzys-h/UndertaleModTool).
+GMLoader is a program that can recompile non-YYC GM:Studio games data using [UndertaleModLib](https://github.com/krzys-h/UndertaleModTool).
 
 ### Features
 * Adding or replacing GML assets by loading the gml files inside GameFolder/mods/code/*.gml
