@@ -79,7 +79,12 @@ using (worker = new())
                     UndertaleTexturePageItem tex = spr.Textures[i].Texture;
                     Directory.CreateDirectory(Path.Combine(noStripFolder, spriteName));
                     string texturePath = Path.Combine(noStripFolder, spriteName, spriteName + "_" + i + ".png");
-                    worker.ExportAsPNG(tex, texturePath);
+                    using (var image = worker.GetTextureFor(tex, spriteName, padded))
+                    {
+                        image.Settings.SetDefine(MagickFormat.Png, "exclude-chunks", "all"); // Strip all metadata
+                        image.Settings.Compression = CompressionMethod.Zip; // Standard compression
+                        image.Write(texturePath);
+                    }
                 }
             });
 
@@ -149,7 +154,6 @@ void DumpSprite(UndertaleSprite sprite)
     int boundingBoxTop = 0;
     uint sepmask = 0;
 
-    
     string fileName = spriteName + ext;
 
     // Calculate total width and maximum height for the strip
@@ -222,6 +226,8 @@ void DumpSprite(UndertaleSprite sprite)
             }
             
             string stripPath = Path.Combine(texFolder, fileName);
+            stripImage.Settings.SetDefine(MagickFormat.Png, "exclude-chunks", "all");
+            stripImage.Settings.Compression = CompressionMethod.Zip;
             stripImage.Write(stripPath);
         }
     }
@@ -263,9 +269,16 @@ void DumpBackground(UndertaleBackground background)
         File.WriteAllText(configFileName, yaml);
 
         string fileName = background.Name.Content + ext;
-
+        string outputPath = Path.Combine(bgFolder, fileName);
         UndertaleTexturePageItem tex = background.Texture;
-        worker.ExportAsPNG(tex, Path.Combine(bgFolder, fileName));
+
+        using (var image = worker.GetTextureFor(tex, background.Name.Content, padded))
+        {
+            image.Settings.SetDefine(MagickFormat.Png, "exclude-chunks", "all"); // Strip all metadata
+            image.Settings.Compression = CompressionMethod.Zip; // Standard compression
+            image.Write(outputPath);
+        }
+
         Log.Information($"Exported {background.Name.Content}");
     }
 }

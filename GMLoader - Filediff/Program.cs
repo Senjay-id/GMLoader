@@ -101,7 +101,7 @@ class Program
                 foreach (string file in spriteConfigFiles)
                 {
                     File.Delete(file);
-                    Console.WriteLine($"Deleted: {Path.GetFileName(file)}");
+                    Log.Debug($"Deleted: {Path.GetFileName(file)}");
                 }
             }
             if (BackgroundSpriteConfigFIles.Length != 0)
@@ -119,22 +119,31 @@ class Program
                     foreach (string file in BackgroundSpriteConfigFIles)
                     {
                         File.Delete(file);
-                        Log.Information($"Deleted: {Path.GetFileName(file)}");
+                        Log.Debug($"Deleted: {Path.GetFileName(file)}");
                     }
                 }
             }
 
-            File.Copy(spriteConfigFileName, Path.Combine(spriteConfigRelativePath, spriteConfigFileName));
-            File.Copy(backgroundSpriteConfigFilename, Path.Combine(backgroundSpriteConfigRelativePath, backgroundSpriteConfigFilename));
-
-            Console.WriteLine($"All files have been copied to the output folder at: {outputFolderPath}");
-            Console.WriteLine("Press any key to close...");
+            if (File.Exists(spriteConfigFileName))
+            {
+                File.Copy(spriteConfigFileName, Path.Combine(spriteConfigRelativePath, spriteConfigFileName));
+                File.Delete(spriteConfigFileName);
+            }
+                
+            if (File.Exists(backgroundSpriteConfigFilename))
+            {
+                File.Copy(backgroundSpriteConfigFilename, Path.Combine(backgroundSpriteConfigRelativePath, backgroundSpriteConfigFilename));
+                File.Delete(backgroundSpriteConfigFilename);
+            }
+                
+            Log.Information($"All files have been copied to the output folder at: {outputFolderPath}");
+            Log.Information("Press any key to close...");
             Console.ReadKey();
         }
         catch (Exception e)
         {
-            Console.WriteLine("An error occurred: " + e.Message);
-            Console.WriteLine("Press any key to close...");
+            Log.Error("An error occurred: " + e.Message);
+            Log.Error("Press any key to close...");
             Console.ReadKey();
         }
     }
@@ -209,13 +218,14 @@ class Program
 
             if (vanillaFileNames.TryGetValue(fileName, out string vanillaFile))
             {
+
                 ulong vanillaHash = ComputeFileHash3(vanillaFile);
                 ulong modHash = ComputeFileHash3(moddedFile);
 
                 // Compare the files
                 if (vanillaHash != modHash)
                 {
-                    //Log.Information($"{vanillaFile} and {moddedFile} hash is not equal");
+                    Log.Information($"{Path.GetFileName(vanillaFile)} hash is {vanillaHash} and {Path.GetFileName(moddedFile)} hash is {modHash} and not equal");
                     Log.Information($"File hash is different, Copying {Path.GetFileName(moddedFile)}");
                     mkDir(Path.GetDirectoryName(outputFilePath));
                     File.Copy(moddedFile, outputFilePath, true);
@@ -254,4 +264,5 @@ class Program
             return xxHash3.ComputeHash(fileBytes, (int)stream.Length, 0);
         }
     }
+
 }

@@ -37,8 +37,8 @@ void dumpObject(UndertaleGameObject obj)
     };
 
     string json = JsonConvert.SerializeObject(objData, Formatting.Indented);
-    string fileName = Path.Combine(outputFolder, $"{obj.Name.Content}.json");
+    string outputFileName = Path.Combine(outputFolder, $"{obj.Name.Content}.json");
 
-    File.WriteAllText(fileName, json);
-    Log.Information($"Dumped {obj.Name} to {fileName}");
+    File.WriteAllText(outputFileName, json);
+    Log.Information($"Exported {Path.GetFileName(outputFileName)}");
 }

@@ -1,0 +1,10 @@
+gml_GlobalScript_scr_mods:
+  - type: findreplace
+
+    find:
+      var _mod_name = string_replace_all(_folder, file_prepath + file_slash_format, "");
+
+    code: |-
+      var _mod_name = string_replace_all(_folder, file_prepath + file_slash_format, "");
+      var _meta_path = _folder + file_slash_format + "meta.ini";
+      if (!file_exists(_meta_path)) continue;

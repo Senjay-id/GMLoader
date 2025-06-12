@@ -1,4 +1,4 @@
-#region Using Directives
+﻿#region Using Directives
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Newtonsoft.Json.Linq;
@@ -38,13 +38,17 @@ public interface IConfig
 {
     public bool AutoGameStart { get; }
     public bool CheckHash { get; }
-    public bool ExportMode { get; }
+    public bool ConvertMode { get; }
+    public string ConvertOutputPath { get; }
     public string ExportDataPath { get; }
+    public string ExportOutputPath { get; }
     public bool ExportCode { get; }
     public bool ExportGameObject { get; }
     public bool ExportTexture { get; }
     public bool ExportAudio { get; }
     public bool ExportRoom { get; }
+    public string ConvertVanillaData { get; }
+    public string ConvertModdedData { get; }
     public string ExportAudioScriptPath { get; }
     public string ExportAudioOutputPath { get; }
     public string ExportTextureScriptPath { get; }
@@ -60,7 +64,7 @@ public interface IConfig
     public string ExportRoomScriptPath { get; }
     public string ExportRoomOutputPath { get; }
     public string GameExecutable { get; }
-    public string SupportedDataHash { get; }
+    public ulong SupportedDataHash { get; }
     public string ImportPreCSX { get; }
     public string ImportBuiltinCSX { get; }
     public string ImportPostCSX { get; }
@@ -140,73 +144,73 @@ public partial class SpriteData
 {
 
     [YamlMember("frames")]
-    public int? yml_frame { get; set; }  // Nullable int
+    public int? yml_frame { get; set; }  
 
     [YamlMember("x")]
-    public int? yml_x { get; set; }      // Nullable int
+    public int? yml_x { get; set; }      
 
     [YamlMember("y")]
-    public int? yml_y { get; set; }      // Nullable int
+    public int? yml_y { get; set; }      
 
     [YamlMember("transparent")]
-    public bool? yml_transparent { get; set; }  // Nullable bool
+    public bool? yml_transparent { get; set; }  
 
     [YamlMember("smooth")]
-    public bool? yml_smooth { get; set; }      // Nullable bool
+    public bool? yml_smooth { get; set; }      
 
     [YamlMember("preload")]
-    public bool? yml_preload { get; set; }     // Nullable bool
+    public bool? yml_preload { get; set; }     
 
     [YamlMember("speed_type")]
-    public uint? yml_speedtype { get; set; }   // Nullable uint
+    public uint? yml_speedtype { get; set; }   
 
     [YamlMember("frame_speed")]
     public float? yml_framespeed { get; set; } // Nullable float
 
     [YamlMember("bounding_box_type")]
-    public uint? yml_boundingboxtype { get; set; }  // Nullable uint
+    public uint? yml_boundingboxtype { get; set; }  
 
     [YamlMember("bbox_left")]
-    public int? yml_bboxleft { get; set; }     // Nullable int
+    public int? yml_bboxleft { get; set; }     
 
     [YamlMember("bbox_right")]
-    public int? yml_bboxright { get; set; }    // Nullable int
+    public int? yml_bboxright { get; set; }    
 
     [YamlMember("bbox_bottom")]
-    public int? yml_bboxbottom { get; set; }   // Nullable int
+    public int? yml_bboxbottom { get; set; }   
 
     [YamlMember("bbox_top")]
-    public int? yml_bboxtop { get; set; }     // Nullable int
+    public int? yml_bboxtop { get; set; }     
 
     [YamlMember("sepmasks")]
-    public uint? yml_sepmask { get; set; }     // Nullable uint
+    public uint? yml_sepmask { get; set; }     
 }
 
 [YamlObject]
 public partial class BackgroundData
 {
     [YamlMember("tile_count")]
-    public uint? yml_tile_count { get; set; }  // Nullable uint
+    public uint? yml_tile_count { get; set; }  
     [YamlMember("tile_width")]
-    public uint? yml_tile_width { get; set; }      // Nullable uint
+    public uint? yml_tile_width { get; set; }      
     [YamlMember("tile_height")]
-    public uint? yml_tile_height { get; set; }      // Nullable uint
+    public uint? yml_tile_height { get; set; }      
     [YamlMember("border_x")]
-    public uint? yml_border_x { get; set; }      // Nullable uint
+    public uint? yml_border_x { get; set; }      
     [YamlMember("border_y")]
-    public uint? yml_border_y { get; set; }  // Nullable uint
+    public uint? yml_border_y { get; set; }  
     [YamlMember("tile_column")]
-    public uint? yml_tile_column { get; set; }      // Nullable uint
+    public uint? yml_tile_column { get; set; }      
     [YamlMember("item_per_tile")]
-    public uint? yml_item_per_tile { get; set; }     // Nullable uint
+    public uint? yml_item_per_tile { get; set; }     
     [YamlMember("transparent")]
-    public bool? yml_transparent { get; set; }     // Nullable bool
+    public bool? yml_transparent { get; set; }     
     [YamlMember("smooth")]
-    public bool? yml_smooth { get; set; }     // Nullable bool
+    public bool? yml_smooth { get; set; }     
     [YamlMember("preload")]
-    public bool? yml_preload { get; set; }     // Nullable bool
+    public bool? yml_preload { get; set; }     
     [YamlMember("frametime")]
-    public long? yml_frametime { get; set; }     // Nullable int
+    public long? yml_frametime { get; set; }     
 }
 
 public class GMLoaderProgram
@@ -216,9 +220,21 @@ public class GMLoaderProgram
     private static ScriptOptions CliScriptOptions { get; set; }
     public static string gameDataPath { get; set; }
     public static string modsPath { get; set; }
-    //public static bool exportCode { get; set; }
-    //public static bool exportGameObject { get; set; }
-    //public static bool exportTexture { get; set; }
+    public static bool exportTexture { get; set; }
+    public static bool exportGameObject { get; set; }
+    public static bool exportCode { get; set; }
+    public static bool exportAudio { get; set; }
+    public static bool exportRoom { get; set; }
+    public static string exportDataPath { get; set; }
+    public static string convertVanillaData { get; set; }
+    public static string convertModdedData { get; set; }
+    public static string convertOutputPath { get; set; }
+    public static string exportTextureScriptPath { get; set; }
+    public static string exportAudioScriptPath { get; set; }
+    public static string exportGameObjectScriptPath { get; set; }
+    public static string exportCodeScriptPath { get; set; }
+    public static string exportRoomScriptPath { get; set; }
+    public static string exportOutputPath { get; set; }
     public static string exportTextureOutputPath { get; set; }
     public static string exportTextureBackgroundOutputPath { get; set; }
     public static string exportTextureNoStripOutputPath { get; set; }
@@ -293,24 +309,27 @@ public class GMLoaderProgram
 
     #endregion
 
-    static void Main()
+    static void Main(string[] args)
     {
         try
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
 
-            if (File.Exists("GMLoader.log"))
-            File.Delete("GMLoader.log");
+            string logFile = "GMLoader.log";
+            string configFile = "GMLoader.ini";
+            
+            if (File.Exists(logFile))
+                File.Delete(logFile);
 
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
                 .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
-                .WriteTo.File("GMLoader.log")
+                .WriteTo.File(logFile)
                 .CreateLogger();
 
             Console.Title = "GMLoader";
 
-            if (!File.Exists("GMLoader.ini"))
+            if (!File.Exists(configFile))
             {
                 Log.Information("Missing GMLoader.ini file \n\n\nPress any key to close...");
                 Console.ReadKey();
@@ -318,7 +337,7 @@ public class GMLoaderProgram
             }
 
             IConfig config = new ConfigurationBuilder<IConfig>()
-               .UseIniFile("GMLoader.ini")
+               .UseIniFile(configFile)
                .Build();
 
             #region Config
@@ -326,19 +345,23 @@ public class GMLoaderProgram
             ulong currentHash = 0;
             bool autoGameStart = config.AutoGameStart;
             bool checkHash = config.CheckHash;
-            bool exportMode = config.ExportMode;
-            bool exportCode = config.ExportCode;
-            bool exportGameObject = config.ExportGameObject;
-            bool exportTexture = config.ExportTexture;
-            bool exportAudio = config.ExportAudio;
-            bool exportRoom = config.ExportRoom;
-            string exportDataPath = config.ExportDataPath;
-            string exportTextureScriptPath = config.ExportTextureScriptPath;
-            string exportAudioScriptPath = config.ExportAudioScriptPath;
-            string exportGameObjectScriptPath = config.ExportGameObjectScriptPath;
-            string exportCodeScriptPath = config.ExportCodeScriptPath;
-            string exportRoomScriptPath = config.ExportRoomScriptPath;
+            bool convertMode = config.ConvertMode;
+            convertOutputPath = config.ConvertOutputPath;
+            exportCode = config.ExportCode;
+            exportGameObject = config.ExportGameObject;
+            exportTexture = config.ExportTexture;
+            exportAudio = config.ExportAudio;
+            exportRoom = config.ExportRoom;
+            convertVanillaData = config.ConvertVanillaData;
+            convertModdedData = config.ConvertModdedData;
+            exportDataPath = config.ExportDataPath;
+            exportTextureScriptPath = config.ExportTextureScriptPath;
+            exportAudioScriptPath = config.ExportAudioScriptPath;
+            exportGameObjectScriptPath = config.ExportGameObjectScriptPath;
+            exportCodeScriptPath = config.ExportCodeScriptPath;
+            exportRoomScriptPath = config.ExportRoomScriptPath;
             exportGameObjectOutputPath = config.ExportGameObjectOutputPath;
+            exportOutputPath = config.ExportOutputPath;
             exportTextureOutputPath = config.ExportTextureOutputPath;
             exportTextureBackgroundOutputPath = config.ExportTextureBackgroundOutputPath;
             exportTextureNoStripOutputPath = config.ExportTextureNoStripOutputPath;
@@ -348,7 +371,7 @@ public class GMLoaderProgram
             exportCodeOutputPath = config.ExportCodeOutputPath;
             exportRoomOutputPath = config.ExportRoomOutputPath;
             string gameExecutable = config.GameExecutable;
-            string supportedHashVersion = config.SupportedDataHash;
+            ulong supportedDataHash = config.SupportedDataHash;
             string importPreCSXPath = config.ImportPreCSX;
             string importBuiltInCSXPath = config.ImportBuiltinCSX;
             string importPostCSXPath = config.ImportPostCSX;
@@ -447,7 +470,7 @@ public class GMLoaderProgram
 
             if (!compilePreCSX && !compileBuiltInCSX && !compilePostCSX)
             {
-                Log.Information("Bruh. \n\n\nPress any key to close...");
+                Log.Information("What are you trying to do? \n\n\nPress any key to close...");
                 Console.ReadKey();
                 Environment.Exit(0);
             }
@@ -464,117 +487,75 @@ public class GMLoaderProgram
                 Environment.Exit(0);
             }
 
-            if (exportMode)
+            if (args.Contains("-convert") || convertMode)
             {
-                Console.Title = $"GMLoader  - Export Mode";
-                
-                if (!File.Exists(exportTextureScriptPath) || !File.Exists(exportGameObjectScriptPath) || 
-                    !File.Exists(exportCodeScriptPath) || !File.Exists(exportAudioScriptPath) || 
-                    !File.Exists(exportRoomScriptPath))
-                {
-                    Log.Error("Missing exporter script");
-                    Console.ReadKey();
-                    Environment.Exit(0);
-                }
-
-                while (Directory.Exists(exportGameObjectOutputPath) || Directory.Exists(exportTextureOutputPath) || 
-                    Directory.Exists(exportCodeOutputPath) || Directory.Exists(exportAudioOutputPath) || 
-                    Directory.Exists(exportRoomOutputPath))
-                {
-                    Log.Information("Please delete the Export folder before exporting.\n\nPress any key to continue..");
-                    Console.ReadKey();
-                    Environment.Exit(0);
-                }
-                
-                Log.Information($"Reading game data from {Path.GetFileName(exportDataPath)}");
-                Data = new UndertaleData();
-                using (var stream = new FileStream(exportDataPath, FileMode.Open, FileAccess.ReadWrite))
-                    Data = UndertaleIO.Read(stream);
-
-                Console.Title = $"GMLoader  -  {Data.GeneralInfo.Name.Content} - Export Mode";
-                Log.Information($"Loaded game {Data.GeneralInfo.Name.Content}");
-
                 ScriptOptionsInitialize();
 
-                invalidCodeNames = new List<string>();
-                invalidCode = 0;
+                ConvertBothData();
 
-                invalidSpriteNames = new List<string>();
-                invalidSprite = 0;
+                Environment.Exit(0);
+            }
 
-                invalidSpriteSizeNames = new List<string>();
-                invalidSpriteSize = 0;
-
-                if (exportGameObject)
-                    RunCSharpFile(exportGameObjectScriptPath);
-                if (exportAudio)
-                    RunCSharpFile(exportAudioScriptPath);
-                if (exportCode)
-                    RunCSharpFile(exportCodeScriptPath);
-                if (exportTexture)
-                    RunCSharpFile(exportTextureScriptPath);
-                if (exportRoom)
-                    RunCSharpFile(exportRoomScriptPath);
-
-                if (!exportGameObject && !exportCode && !exportTexture && !exportAudio && !exportRoom)
+            if (!File.Exists(backupDataPath))
+            {
+                if (File.Exists(gameDataPath))
                 {
-                    Log.Information("No export option enabled?");
+                    ulong dataHash = ComputeFileHash3(gameDataPath);
+
+                    if (dataHash != supportedDataHash && checkHash)
+                    {
+                        Console.WriteLine($"\nError, game data hash is not equal to the supportedDataHash, if your game is modded previously just reinstall or verify the game.\nOtherwise the modloader hash data is outdated and you need to wait for the update.\n\nIf your using MO2, check the overwrite folder and delete {gameDataPath} if it exists");
+                        Console.ReadKey();
+                        Environment.Exit(0);
+                    }
+                    else if (checkHash)
+                    {
+                        File.Copy(gameDataPath, backupDataPath);
+                        Log.Information($"Backup of the data has been created at {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, backupDataPath))}");
+                        currentHash = ComputeFileHash3(backupDataPath);
+                    }
+                    else
+                    {
+                        currentHash = ComputeFileHash3(gameDataPath);
+                    }
+                }
+                else
+                {
+                    Log.Error($"Error, Missing {gameDataPath}");
                     Console.ReadKey();
                     Environment.Exit(0);
                 }
-
-                if (invalidCode > 0)
-                {
-                    Log.Information("");
-                    Log.Error("Error, Failed to decompile the code below:");
-                    foreach (string name in invalidCodeNames)
-                    {
-                        Log.Error(name);
-                    }
-                    Log.Information("");
-                }
-                if (invalidSpriteSize > 0)
-                {
-                    Log.Information("");
-                    Log.Error("Error, the sprite below has invalid height or width:");
-                    foreach (var name in invalidSpriteSizeNames)
-                    {
-                        Log.Error(name);
-                    }
-                    Log.Information("");
-                }
-                Console.WriteLine("");
-                Log.Information($"Assets has been exported to {Path.GetDirectoryName(Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, exportCodeOutputPath)))}");
-                Console.WriteLine("");
-                Log.Information("Press any key to close...");
-                Console.ReadKey();
-                Environment.Exit(0);
             }
-            if (File.Exists(backupDataPath))
+            else
             {
                 currentHash = ComputeFileHash3(backupDataPath);
             }
 
             Data = new UndertaleData();
-            if (File.Exists(backupDataPath) && supportedHashVersion == currentHash.ToString()) //fewer instruction to convert them to string rather than using integer
+
+            if (File.Exists(backupDataPath) && supportedDataHash == currentHash)
             {
                 Log.Information($"Reading game data from {Path.GetFileName(backupDataPath)}");
                 using (var stream = new FileStream(backupDataPath, FileMode.Open, FileAccess.ReadWrite))
+                {
                     Data = UndertaleIO.Read(stream);
+                }
+                    
             }
-            else if (File.Exists(backupDataPath) && supportedHashVersion != currentHash.ToString() && checkHash)
+            else if (File.Exists(backupDataPath) && supportedDataHash != currentHash && checkHash)
             {
-                Log.Information("\nGame Data Hash Mismatch Error.\nThis happens because modloader is outdated or the data.win is modified.\n\nDelete backup.win and verify the integrity of game.\n\nIf your using MO2, check the overwrite folder and delete backup.win\n\n\nPress any key to close...");
+                Log.Information($"\nError, Game Data Hash Mismatch.\nThis happens because modloader is outdated or the {gameDataPath} is modified.\n\nDelete {backupDataPath} and reinstall or verify the integrity of game.\n\nIf your using MO2, check the overwrite folder and delete {backupDataPath}\n\n\nPress any key to close...");
                 Console.ReadKey();
                 Environment.Exit(0);
             }
             else
             {
-                Log.Information($"Reading game data from {Path.GetFileName(gameDataPath)}");
+                // This should only happen if checkHash is false and backup.win doesn't exists
+                Log.Warning($"Warning, checkHash is false, make sure that you know what your doing. Reading game data from {gameDataPath}");
                 using (var stream = new FileStream(gameDataPath, FileMode.Open, FileAccess.ReadWrite))
+                {
                     Data = UndertaleIO.Read(stream);
-                File.Copy(gameDataPath, backupDataPath);
-                Log.Information($"Backup of the data has been created at {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, backupDataPath))}");
+                }
             }
 
             defaultDecompSettings = new Underanalyzer.Decompiler.DecompileSettings()
@@ -734,7 +715,7 @@ public class GMLoaderProgram
         }
         catch (Exception e)
         {
-            Log.Warning("An error occurred: " + e.Message);
+            Log.Error("An error occurred: " + e.Message);
             Console.WriteLine("Press any key to close...");
             Console.ReadKey();
         }
@@ -845,12 +826,11 @@ public class GMLoaderProgram
                 ? string.Join(", ", modificationHistory[scriptName])
                 : "no modifications recorded";
 
-            Log.Error($"An error has occurred on {fileName} while processing {scriptName}\n\n" +
-                     $"Script '{scriptName}' was modified by these files in order: {history}\n\n" +
-                     $"Find string:\n{find}\n\n");
-                     //$"Code string:\n{code}\n\n");
-
-            //Log.Debug($"Exception: \n{e}\n");
+            Log.Warning($"An error has occurred on {fileName} while processing {scriptName}\n\n" +
+                     $"'{scriptName}' was modified by these files in order: {history}\n\n" +
+                     $"Find string:\n{find}\n\n" +
+                     $"Code string:\n{code}\n\n" +
+                     $"Exception: \n{e}\n\n");
         }
     }
 
@@ -1051,7 +1031,7 @@ public class GMLoaderProgram
 
     public static ulong ComputeFileHash64(string filePath)
     {
-        using (FileStream fileStream = File.OpenRead(filePath))
+        using (var fileStream = File.OpenRead(filePath))
         {
             ulong hash = xxHash64.ComputeHash(fileStream);
             return hash;
@@ -1151,6 +1131,480 @@ public class GMLoaderProgram
             Log.Error("/*\nDECOMPILER FAILED!\n\n" + e.ToString() + "\n*/");
         }
     }
+
+    public static void ExportData(string dataPath)
+    {
+        Console.Title = $"GMLoader  - Export Mode";
+
+        if (!File.Exists(exportTextureScriptPath) || !File.Exists(exportGameObjectScriptPath) ||
+            !File.Exists(exportCodeScriptPath) || !File.Exists(exportAudioScriptPath) ||
+            !File.Exists(exportRoomScriptPath))
+        {
+            Log.Error("some exporter script are missing");
+            Console.ReadKey();
+            Environment.Exit(0);
+        }
+
+        while (Directory.Exists(exportGameObjectOutputPath) || Directory.Exists(exportTextureOutputPath) ||
+            Directory.Exists(exportCodeOutputPath) || Directory.Exists(exportAudioOutputPath) ||
+            Directory.Exists(exportRoomOutputPath))
+        {
+            Log.Information("Please delete the Export folder before exporting.\n\nPress any key to continue..");
+            Console.ReadKey();
+        }
+
+        Log.Information($"Reading game data from {Path.GetFileName(dataPath)}");
+
+        Data = new UndertaleData();
+
+        using (var stream = new FileStream(dataPath, FileMode.Open, FileAccess.ReadWrite))
+        {
+            Data = UndertaleIO.Read(stream);
+        }
+            
+        Console.Title = $"GMLoader  -  {Data.GeneralInfo.Name.Content} - Export Mode";
+        Log.Information($"Loaded game {Data.GeneralInfo.Name.Content}");
+
+        invalidCodeNames = new List<string>();
+        invalidCode = 0;
+
+        invalidSpriteNames = new List<string>();
+        invalidSprite = 0;
+
+        invalidSpriteSizeNames = new List<string>();
+        invalidSpriteSize = 0;
+
+        if (exportTexture)
+            RunCSharpFile(exportTextureScriptPath);
+        if (exportGameObject)
+            RunCSharpFile(exportGameObjectScriptPath);
+        if (exportAudio)
+            RunCSharpFile(exportAudioScriptPath);
+        if (exportCode)
+            RunCSharpFile(exportCodeScriptPath);
+        if (exportRoom)
+            RunCSharpFile(exportRoomScriptPath);
+
+        if (!exportGameObject && !exportCode && !exportTexture && !exportAudio && !exportRoom)
+        {
+            Log.Information("No export option enabled?");
+            Console.ReadKey();
+            Environment.Exit(0);
+        }
+
+        if (invalidCode > 0)
+        {
+            Log.Information("");
+            Log.Error("Error, Failed to decompile the code below:");
+            foreach (string name in invalidCodeNames)
+            {
+                Log.Error(name);
+            }
+            Log.Information("");
+        }
+        if (invalidSpriteSize > 0)
+        {
+            Log.Information("");
+            Log.Error("Error, the sprite below has invalid height or width:");
+            foreach (var name in invalidSpriteSizeNames)
+            {
+                Log.Error(name);
+            }
+            Log.Information("");
+        }
+
+        Log.Information($"Successfully exported {dataPath}");
+    }
+
+    public static void ConvertBothData()
+    {
+        string vanillaExportPath = "vanilla_export";
+        string moddedExportPath = "modded_export";
+
+        while (!File.Exists(convertVanillaData))
+        {
+            Log.Error($"Error, missing {convertVanillaData}");
+            Console.ReadKey();
+        }
+
+        while (!File.Exists(convertModdedData))
+        {
+            Log.Error($"Error, missing {convertModdedData}");
+            Console.ReadKey();
+        }
+
+        while (Directory.Exists(vanillaExportPath))
+        {
+            Log.Error($"Please delete the {vanillaExportPath} folder before proceeding");
+            Console.ReadKey();
+        }
+
+        while (Directory.Exists(moddedExportPath))
+        {
+            Log.Error($"Please delete the {moddedExportPath} folder before proceeding");
+            Console.ReadKey();
+        }
+
+        while (Directory.Exists(exportOutputPath))
+        {
+            Log.Error($"Please delete the {exportOutputPath} folder before proceeding");
+            Console.ReadKey();
+        }
+
+        while (Directory.Exists(convertOutputPath))
+        {
+            Log.Error($"Please delete the {convertOutputPath} folder before proceeding");
+            Console.ReadKey();
+        }
+
+        ExportData(convertVanillaData);
+        Directory.Move(exportOutputPath, vanillaExportPath);
+
+        ExportData(convertModdedData);
+        Directory.Move(exportOutputPath, moddedExportPath);
+        ///
+        mkDir(convertOutputPath);
+        CompareAndCopyFiles(vanillaExportPath, moddedExportPath, convertOutputPath);
+
+        CopyVanillaSpriteConfig(moddedExportPath, convertOutputPath);
+        CopyNoStripStyleSprites(moddedExportPath, convertOutputPath);
+        MergeSpriteConfigurations(convertOutputPath);
+
+        RefactorIntoGMLoaderFormat(convertOutputPath);
+
+        Log.Information($"Done converting, files has been copied into {convertOutputPath}");
+
+        Console.WriteLine("\nWould you like to delete the residual exported files? (Y/N)");
+
+        string response = Console.ReadLine()?.ToLower();
+
+        while (response != "y" && response != "n" && response != "yes" && response != "no")
+        {
+            Console.WriteLine("Acceptable response is only \"y\" or \"n\" ");
+            response = Console.ReadLine()?.ToLower();
+        }
+
+        if (response == "y" || response == "yes")
+        {
+            Log.Information($"Deleting {vanillaExportPath} ...");
+            Directory.Delete(vanillaExportPath, true);
+
+            Log.Information($"Deleting {moddedExportPath} ...");
+            Directory.Delete(moddedExportPath, true);
+        }
+        else
+        {
+            Environment.Exit(0);
+        }
+    }
+
+    // This is by far the stupidest code that I wrote, please refactor this
+    public static void CompareAndCopyFiles(string vanillaFolder, string moddedFolder, string outputFolder)
+    {
+        Log.Information("Executing filediff comparison");
+        var vanillaFiles = Directory.GetFiles(vanillaFolder, "*.*", SearchOption.AllDirectories);
+        var moddedFiles = Directory.GetFiles(moddedFolder, "*.*", SearchOption.AllDirectories);
+        var regex = new Regex(@"^(.*?)(?=_f[0-9])", RegexOptions.Compiled);
+
+        var vanillaFileNames = new ConcurrentDictionary<string, string>();
+
+        Parallel.ForEach(vanillaFiles, vanillaFile =>
+        {
+            var match = regex.Match(Path.GetFileName(vanillaFile));
+            if (match.Success)
+            {
+                string baseName = match.Groups[1].Value;
+                //Log.Information($"Storing basename: {baseName} which equals to {vanillaFile}");
+                vanillaFileNames[baseName] = vanillaFile;
+            }
+            else if (vanillaFile.Contains("backgrounds") || vanillaFile.Contains("nostrip"))
+            {
+                //Log.Warning($"{vanillaFile} ends with backgrounds or nostrip");
+                string fileName = Path.GetFileName(vanillaFile);
+                vanillaFileNames[fileName] = vanillaFile;
+            }
+            else
+            {
+                vanillaFileNames[Path.GetFileName(vanillaFile)] = vanillaFile; // Store all other vanilla files
+            }
+        });
+
+        Parallel.ForEach(moddedFiles, moddedFile =>
+        {
+            string moddedFilename = Path.GetFileName(moddedFile);
+            var match = regex.Match(Path.GetFileName(moddedFile));
+            if (match.Success)
+            {
+                moddedFilename = match.Groups[1].Value;
+                //Log.Information($"Storing fileName: {fileName} which equals to {moddedFile}");
+            }
+
+            string relativePath = Path.GetRelativePath(moddedFolder, moddedFile);
+            string outputFilePath = Path.Combine(outputFolder, relativePath);
+
+            // why do i need to do this
+            mkDir(Path.Combine(outputFolder, Path.GetFileName(configPath)));
+            mkDir(Path.Combine(outputFolder, Path.GetFileName(configPath), Path.GetFileName(newObjectPath)));
+            mkDir(Path.Combine(outputFolder, Path.GetFileName(configPath), Path.GetFileName(existingObjectPath)));
+
+            string outputNewObjectPath = Path.Combine(outputFolder, Path.GetFileName(configPath), Path.GetFileName(newObjectPath), moddedFilename);
+            string outputExistingObjectPath = Path.Combine(outputFolder, Path.GetFileName(configPath), Path.GetFileName(existingObjectPath), moddedFilename);
+
+            // Always copy spriteData regardless of hash
+            if (moddedFilename.Equals("data.json", StringComparison.OrdinalIgnoreCase))
+            {
+                Log.Information($"Copying {moddedFile}");
+                mkDir(Path.GetDirectoryName(outputFilePath));
+                File.Copy(moddedFile, outputFilePath, true);
+                return;
+            }
+
+            if (vanillaFileNames.TryGetValue(moddedFilename, out string vanillaFile))
+            {
+                ulong vanillaHash = ComputeFileHash3(vanillaFile);
+                ulong modHash = ComputeFileHash3(moddedFile);
+
+                // Compare the files
+                if (vanillaHash != modHash)
+                {
+                    Log.Information($"File hash is different, Copying {Path.GetFileName(moddedFile)}");
+
+                    if (moddedFile.Contains(Path.GetFileName(exportGameObjectOutputPath)))
+                    {
+                        mkDir(Path.GetDirectoryName(outputFilePath));
+                        File.Copy(moddedFile, outputExistingObjectPath, true);
+                        return;
+                    }
+
+                    mkDir(Path.GetDirectoryName(outputFilePath));
+                    File.Copy(moddedFile, outputFilePath, true);
+                }
+            }
+            else
+            {
+                Log.Information($"Vanilla file not found. Copying {Path.GetFileName(moddedFile)}");
+
+                if (moddedFile.Contains(Path.GetFileName(exportGameObjectOutputPath)))
+                {
+                    mkDir(Path.GetDirectoryName(outputFilePath));
+                    File.Copy(moddedFile, outputNewObjectPath, true);
+                    return;
+                }
+
+                mkDir(Path.GetDirectoryName(outputFilePath));
+                File.Copy(moddedFile, outputFilePath, true);
+            }
+        });
+    }
+
+    public static void CopyNoStripStyleSprites(string moddedFolder, string outputFolder)
+    {
+        Log.Information("Copying background vanilla sprite configuration files");
+
+        string outputNoStripSpriteFolder = Path.Combine(outputFolder, Path.GetFileName(exportTextureOutputPath), Path.GetFileName(exportTextureNoStripOutputPath));
+        string moddedNoStripSpriteFolder = Path.Combine(moddedFolder, Path.GetFileName(exportTextureOutputPath), Path.GetFileName(exportTextureNoStripOutputPath));
+
+        string[] outputSpriteDirectories = Directory.GetDirectories(outputNoStripSpriteFolder);
+
+        foreach (string outputSpriteDir in outputSpriteDirectories)
+        {
+            string spriteName = Path.GetFileName(outputSpriteDir);
+
+            string moddedSpriteDir = Path.Combine(moddedNoStripSpriteFolder, spriteName);
+
+            if (Directory.Exists(moddedSpriteDir))
+            {
+                string[] pngFiles = Directory.GetFiles(moddedSpriteDir, "*.png");
+
+                foreach (string pngFile in pngFiles)
+                {
+                    string destFile = Path.Combine(outputSpriteDir, Path.GetFileName(pngFile));
+
+                    try
+                    {
+                        File.Copy(pngFile, destFile, overwrite: true);
+                        Log.Information($"Copied {pngFile} to {destFile}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error($"Failed to copy {pngFile}: {ex.Message}");
+                    }
+                }
+            }
+            else
+            {
+                Log.Debug($"No modded sprites found for {spriteName}");
+            }
+        }
+    }
+
+    public static void CopyVanillaSpriteConfig(string moddedFolder, string outputFolder)
+    {
+        Log.Information("Copying vanilla sprite configuration files");
+        string outputSpriteFolder = Path.Combine(outputFolder, Path.GetFileName(exportTextureOutputPath));
+        string outputSpriteConfigFolder = Path.Combine(outputFolder, Path.GetFileName(exportTextureConfigOutputPath));
+        string moddedOutputSpriteConfigFolder = Path.Combine(moddedFolder, Path.GetFileName(exportTextureConfigOutputPath));
+
+        var spriteFiles = Directory.GetFiles(outputSpriteFolder, "*.*", SearchOption.AllDirectories)
+            .Select(f => Path.GetFileNameWithoutExtension(f))
+            .ToList();
+
+        mkDir(outputSpriteConfigFolder);
+
+        foreach (var yamlFile in Directory.GetFiles(moddedOutputSpriteConfigFolder, "*.yaml", SearchOption.AllDirectories))
+        {
+            string fileNameWithoutExt = Path.GetFileNameWithoutExtension(yamlFile);
+
+            if (spriteFiles.Contains(fileNameWithoutExt))
+            {
+                string destPath = Path.Combine(outputSpriteConfigFolder, Path.GetFileName(yamlFile));
+
+                try
+                {
+                    File.Copy(yamlFile, destPath, overwrite: true);
+                    Log.Information($"Copied {Path.GetFileName(yamlFile)}");
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Failed to copy {yamlFile}: {ex.Message}");
+                }
+            }
+        }
+
+        string outputBackgroundSpriteFolder = Path.Combine(outputSpriteFolder, Path.GetFileName(exportTextureBackgroundOutputPath));
+        string outputBackgroundSpriteConfigFolder = Path.Combine(outputSpriteConfigFolder, Path.GetFileName(exportBackgroundTextureConfigOutputPath));
+        string moddedBackgroundSpriteConfigFolder = Path.Combine(moddedOutputSpriteConfigFolder, Path.GetFileName(exportBackgroundTextureConfigOutputPath));
+
+        var backgroundSpriteFiles = Directory.GetFiles(outputBackgroundSpriteFolder, "*.*", SearchOption.AllDirectories)
+            .Select(f => Path.GetFileNameWithoutExtension(f))
+            .ToList();
+
+        mkDir(outputBackgroundSpriteConfigFolder);
+
+        foreach (var yamlFile in Directory.GetFiles(moddedBackgroundSpriteConfigFolder, "*.yaml", SearchOption.AllDirectories))
+        {
+            string fileNameWithoutExt = Path.GetFileNameWithoutExtension(yamlFile);
+
+            if (backgroundSpriteFiles.Contains(fileNameWithoutExt))
+            {
+                string destPath = Path.Combine(outputBackgroundSpriteConfigFolder, Path.GetFileName(yamlFile));
+
+                try
+                {
+                    File.Copy(yamlFile, destPath, overwrite: true);
+                    Log.Information($"Copied {Path.GetFileName(yamlFile)}");
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Failed to copy {yamlFile}: {ex.Message}");
+                }
+            }
+        }
+    }
+
+    public static void MergeSpriteConfigurations(string basePath)
+    {
+        Log.Information("Merging sprite configuration files");
+        string spriteConfigFileName = "MyModdedSpriteConfig.yaml";
+        string backgroundSpriteConfigFilename = "MyModdedBackgroundSpriteConfig.yaml";
+        string spriteConfigRelativePath = Path.Combine(basePath, Path.GetFileName(exportTextureConfigOutputPath));
+        string backgroundSpriteConfigRelativePath = Path.Combine(spriteConfigRelativePath, "backgrounds");
+        mkDir(spriteConfigRelativePath);
+        mkDir(backgroundSpriteConfigRelativePath);
+        string[] spriteConfigFiles = Directory.GetFiles(spriteConfigRelativePath, "*.yaml", SearchOption.TopDirectoryOnly);
+        string[] BackgroundSpriteConfigFIles = Directory.GetFiles(backgroundSpriteConfigRelativePath, "*.yaml", SearchOption.TopDirectoryOnly);
+
+        if (spriteConfigFiles.Length != 0)
+        {
+            using (StreamWriter writer = new StreamWriter(spriteConfigFileName))
+            {
+                foreach (string file in spriteConfigFiles)
+                {
+                    Log.Information($"Merging {Path.GetFileName(file)}");
+
+                    string fileContent = File.ReadAllText(file);
+                    writer.WriteLine(fileContent);
+                }
+            }
+            foreach (string file in spriteConfigFiles)
+            {
+                File.Delete(file);
+                Log.Debug($"Deleted: {Path.GetFileName(file)}");
+            }
+        }
+        else
+        {
+            Log.Information("No sprite configuration files found, skipping the process");
+        }
+        if (BackgroundSpriteConfigFIles.Length != 0)
+        {
+            using (StreamWriter writer = new StreamWriter(backgroundSpriteConfigFilename))
+            {
+                foreach (string file in BackgroundSpriteConfigFIles)
+                {
+                    Log.Information($"Merging {Path.GetFileName(file)}");
+
+                    string fileContent = File.ReadAllText(file);
+                    writer.WriteLine(fileContent);
+                }
+                foreach (string file in BackgroundSpriteConfigFIles)
+                {
+                    Log.Debug($"Deleting {Path.GetFileName(file)}");
+                    File.Delete(file);
+                }
+            }
+        }
+        else
+        {
+            Log.Information("No background sprite configuration files found, skipping the process");
+        }
+
+        if (File.Exists(spriteConfigFileName))
+            File.Move(spriteConfigFileName, Path.Combine(spriteConfigRelativePath, spriteConfigFileName));
+
+        if (File.Exists(backgroundSpriteConfigFilename))
+            File.Move(backgroundSpriteConfigFilename, Path.Combine(backgroundSpriteConfigRelativePath, backgroundSpriteConfigFilename));
+
+    }
+
+    public static void RefactorIntoGMLoaderFormat(string targetFolder)
+    {
+        Log.Information("Refactoring into GMLoader format");
+        string _configPath = Path.Combine(targetFolder, Path.GetFileName(configPath));
+        mkDir(_configPath);
+
+        string texturePath = Path.Combine(targetFolder, Path.GetFileName(exportTextureOutputPath));
+        string refactoredTexturePath = Path.Combine(targetFolder, Path.GetFileName(texturesPath));
+
+        string spriteConfigPath = Path.Combine(targetFolder, Path.GetFileName(exportTextureConfigOutputPath));
+        string spriteConfigRelativePath = Path.Combine(Path.GetFileName(Path.GetDirectoryName(texturesConfigPath)), Path.GetFileName(texturesConfigPath)); // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHHHHHHHHHHH
+        string refactoredSpriteConfigPath = Path.Combine(targetFolder, spriteConfigRelativePath);
+
+        string _objectPath = Path.Combine(targetFolder, Path.GetFileName(exportGameObjectOutputPath));
+
+        string _codePath = Path.Combine(targetFolder, Path.GetFileName(exportCodeOutputPath));
+        string refactoredexportCodePath = Path.Combine(targetFolder, Path.GetFileName(gmlCodePath));
+
+        string _roomPath = Path.Combine(targetFolder, Path.GetFileName(exportRoomOutputPath));
+        string refactoredroomPath = Path.Combine(targetFolder, Path.GetFileName(roomPath));
+
+        if (Directory.Exists(texturePath))
+            Directory.Move(texturePath, refactoredTexturePath);
+
+        if (Directory.Exists(spriteConfigPath))
+            Directory.Move(spriteConfigPath, refactoredSpriteConfigPath);
+
+        //Yes this is intended
+        if (Directory.Exists(_objectPath))
+            Directory.Delete(_objectPath);
+
+        if (Directory.Exists(_codePath))
+            Directory.Move(_codePath, refactoredexportCodePath);
+
+        if (Directory.Exists(_roomPath))
+            Directory.Move(_roomPath, refactoredroomPath);
+    }
+
     #endregion
 
     #region Script Handling
