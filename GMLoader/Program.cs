@@ -39,6 +39,7 @@ public interface IConfig
     public bool AutoGameStart { get; }
     public bool CheckHash { get; }
     public bool ConvertMode { get; }
+    public bool ReuseVanillaExport { get; }
     public string ConvertOutputPath { get; }
     public string ExportDataPath { get; }
     public string ExportOutputPath { get; }
@@ -226,6 +227,7 @@ public class GMLoaderProgram
     public static bool exportAudio { get; set; }
     public static bool exportRoom { get; set; }
     public static string exportDataPath { get; set; }
+    public static bool reuseVanillaExport { get; set; }
     public static string convertVanillaData { get; set; }
     public static string convertModdedData { get; set; }
     public static string convertOutputPath { get; set; }
@@ -346,6 +348,7 @@ public class GMLoaderProgram
             bool autoGameStart = config.AutoGameStart;
             bool checkHash = config.CheckHash;
             bool convertMode = config.ConvertMode;
+            bool reuseVanillaExport = config.ReuseVanillaExport;
             convertOutputPath = config.ConvertOutputPath;
             exportCode = config.ExportCode;
             exportGameObject = config.ExportGameObject;
@@ -1221,7 +1224,7 @@ public class GMLoaderProgram
         string vanillaExportPath = "vanilla_export";
         string moddedExportPath = "modded_export";
 
-        while (!File.Exists(convertVanillaData))
+        while (!File.Exists(convertVanillaData) && !reuseVanillaExport)
         {
             Log.Error($"Error, missing {convertVanillaData}");
             Console.ReadKey();
@@ -1233,7 +1236,7 @@ public class GMLoaderProgram
             Console.ReadKey();
         }
 
-        while (Directory.Exists(vanillaExportPath))
+        while (Directory.Exists(vanillaExportPath) && !reuseVanillaExport)
         {
             Log.Error($"Please delete the {vanillaExportPath} folder before proceeding");
             Console.ReadKey();
@@ -1257,12 +1260,15 @@ public class GMLoaderProgram
             Console.ReadKey();
         }
 
-        ExportData(convertVanillaData);
-        Directory.Move(exportOutputPath, vanillaExportPath);
+        if (!reuseVanillaExport || (reuseVanillaExport && !Directory.Exists(vanillaExportPath)))
+        {
+            ExportData(convertVanillaData);
+            Directory.Move(exportOutputPath, vanillaExportPath);
+        }
 
         ExportData(convertModdedData);
         Directory.Move(exportOutputPath, moddedExportPath);
-        ///
+
         mkDir(convertOutputPath);
         CompareAndCopyFiles(vanillaExportPath, moddedExportPath, convertOutputPath);
 
@@ -1402,6 +1408,7 @@ public class GMLoaderProgram
         Log.Information("Copying background vanilla sprite configuration files");
 
         string outputNoStripSpriteFolder = Path.Combine(outputFolder, Path.GetFileName(exportTextureOutputPath), Path.GetFileName(exportTextureNoStripOutputPath));
+        mkDir(outputNoStripSpriteFolder);
         string moddedNoStripSpriteFolder = Path.Combine(moddedFolder, Path.GetFileName(exportTextureOutputPath), Path.GetFileName(exportTextureNoStripOutputPath));
 
         string[] outputSpriteDirectories = Directory.GetDirectories(outputNoStripSpriteFolder);
