@@ -80,8 +80,9 @@ public interface IConfig
     public string GameData { get; }
     public string ModsDirectory { get; }
     public string TexturesDirectory { get; }
-    public string TexturesConfigDirectory { get; }
+    public string BackgroundTextureDirectory { get; }
     public string NoStripTexturesDirectory { get; }
+    public string TexturesConfigDirectory { get; }
     public string BackgroundsConfigDirectory { get; }
     public string ShaderDirectory { get; }
     public string ConfigDirectory { get; }
@@ -255,6 +256,7 @@ public class GMLoaderProgram
     public static List<string> invalidXdeltaNames { get; set; }
     public static int invalidSpriteSize { get; set; }
     public static string texturesPath { get; set; }
+    public static string backgroundsTexturePath { get; set; }
     public static string texturesConfigPath { get; set; }
     public static string noStripTexturesPath { get; set; }
     public static string backgroundsConfigPath { get; set; }
@@ -348,7 +350,7 @@ public class GMLoaderProgram
             bool autoGameStart = config.AutoGameStart;
             bool checkHash = config.CheckHash;
             bool convertMode = config.ConvertMode;
-            bool reuseVanillaExport = config.ReuseVanillaExport;
+            reuseVanillaExport = config.ReuseVanillaExport;
             convertOutputPath = config.ConvertOutputPath;
             exportCode = config.ExportCode;
             exportGameObject = config.ExportGameObject;
@@ -389,8 +391,9 @@ public class GMLoaderProgram
             gameDataPath = config.GameData;
             modsPath = config.ModsDirectory;
             texturesPath = config.TexturesDirectory;
-            texturesConfigPath = config.TexturesConfigDirectory;
+            backgroundsTexturePath = config.BackgroundTextureDirectory;
             noStripTexturesPath = config.NoStripTexturesDirectory;
+            texturesConfigPath = config.TexturesConfigDirectory;
             backgroundsConfigPath = config.BackgroundsConfigDirectory;
             shaderPath = config.ShaderDirectory;
             configPath = config.ConfigDirectory;
@@ -1308,6 +1311,14 @@ public class GMLoaderProgram
     public static void CompareAndCopyFiles(string vanillaFolder, string moddedFolder, string outputFolder)
     {
         Log.Information("Executing filediff comparison");
+
+        // why do i need to do this
+        mkDir(Path.Combine(outputFolder, Path.GetFileName(exportTextureOutputPath), Path.GetFileName(backgroundsTexturePath)));
+        mkDir(Path.Combine(outputFolder, Path.GetFileName(exportTextureOutputPath), Path.GetFileName(noStripTexturesPath)));
+        mkDir(Path.Combine(outputFolder, Path.GetFileName(configPath)));
+        mkDir(Path.Combine(outputFolder, Path.GetFileName(configPath), Path.GetFileName(newObjectPath)));
+        mkDir(Path.Combine(outputFolder, Path.GetFileName(configPath), Path.GetFileName(existingObjectPath)));
+
         var vanillaFiles = Directory.GetFiles(vanillaFolder, "*.*", SearchOption.AllDirectories);
         var moddedFiles = Directory.GetFiles(moddedFolder, "*.*", SearchOption.AllDirectories);
         var regex = new Regex(@"^(.*?)(?=_f[0-9])", RegexOptions.Compiled);
@@ -1347,11 +1358,6 @@ public class GMLoaderProgram
 
             string relativePath = Path.GetRelativePath(moddedFolder, moddedFile);
             string outputFilePath = Path.Combine(outputFolder, relativePath);
-
-            // why do i need to do this
-            mkDir(Path.Combine(outputFolder, Path.GetFileName(configPath)));
-            mkDir(Path.Combine(outputFolder, Path.GetFileName(configPath), Path.GetFileName(newObjectPath)));
-            mkDir(Path.Combine(outputFolder, Path.GetFileName(configPath), Path.GetFileName(existingObjectPath)));
 
             string outputNewObjectPath = Path.Combine(outputFolder, Path.GetFileName(configPath), Path.GetFileName(newObjectPath), moddedFilename);
             string outputExistingObjectPath = Path.Combine(outputFolder, Path.GetFileName(configPath), Path.GetFileName(existingObjectPath), moddedFilename);
