@@ -1275,9 +1275,12 @@ public class GMLoaderProgram
         mkDir(convertOutputPath);
         CompareAndCopyFiles(vanillaExportPath, moddedExportPath, convertOutputPath);
 
-        CopyVanillaSpriteConfig(moddedExportPath, convertOutputPath);
-        CopyNoStripStyleSprites(moddedExportPath, convertOutputPath);
-        MergeSpriteConfigurations(convertOutputPath);
+        if (exportTexture)
+        {
+            CopyVanillaSpriteConfig(moddedExportPath, convertOutputPath);
+            CopyNoStripStyleSprites(moddedExportPath, convertOutputPath);
+            MergeSpriteConfigurations(convertOutputPath);
+        }
 
         RefactorIntoGMLoaderFormat(convertOutputPath);
 
