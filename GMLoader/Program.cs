@@ -57,6 +57,7 @@ public interface IConfig
     public string ExportTextureBackgroundOutputPath { get; }
     public string ExportTextureNoStripOutputPath { get; }
     public string ExportTextureConfigOutputPath { get; }
+    public string TextureExclusion { get; }
     public string ExportBackgroundTextureConfigOutputPath { get; }
     public string ExportGameObjectScriptPath { get; }
     public string ExportGameObjectOutputPath { get; }
@@ -96,6 +97,15 @@ public interface IConfig
     public string NewObjectDirectory { get; }
     public string ExistingObjectDirectory { get; }
     public string RoomDirectory { get; }
+    public string DeltaruneBaseDirectory { get; }
+    public string DeltaruneCH1Directory { get; }
+    public string DeltaruneCH2Directory { get; }
+    public string DeltaruneCH3Directory { get; }
+    public string DeltaruneCH4Directory { get; }
+    public string DeltaruneCH1DataPath { get; }
+    public string DeltaruneCH2DataPath { get; }
+    public string DeltaruneCH3DataPath { get; }
+    public string DeltaruneCH4DataPath { get; }
     public int DefaultSpriteX { get; }
     public int DefaultSpriteY { get; }
     public uint DefaultSpriteSpeedType { get; }
@@ -221,6 +231,7 @@ public class GMLoaderProgram
     public static UndertaleData Data { get; set; }
     private static ScriptOptions CliScriptOptions { get; set; }
     public static string gameDataPath { get; set; }
+    public static string gameName { get; set; }
     public static string modsPath { get; set; }
     public static bool exportTexture { get; set; }
     public static bool exportGameObject { get; set; }
@@ -242,11 +253,34 @@ public class GMLoaderProgram
     public static string exportTextureBackgroundOutputPath { get; set; }
     public static string exportTextureNoStripOutputPath { get; set; }
     public static string exportTextureConfigOutputPath { get; set; }
+    public static string textureExclusion { get; set; }
+    public static List<string> textureExclusionList { get; set; }
     public static string exportBackgroundTextureConfigOutputPath { get; set; }
     public static string exportAudioOutputPath { get; set; }
     public static string exportGameObjectOutputPath { get; set; }
     public static string exportCodeOutputPath { get; set; }
     public static string exportRoomOutputPath { get; set; }
+    public static bool compilePreCSX { get; set; }
+    public static bool compileBuiltInCSX { get; set; }
+    public static bool compilePostCSX { get; set; }
+    public static bool compileAfterCSX { get; set; }
+    public static string deltaruneBasePath { get; set; }
+    public static string deltaruneCH1Path { get; set; }
+    public static string deltaruneCH2Path { get; set; }
+    public static string deltaruneCH3Path { get; set; }
+    public static string deltaruneCH4Path { get; set; }
+    public static string deltaruneCH1DataPath { get; set; }
+    public static string deltaruneCH2DataPath { get; set; }
+    public static string deltaruneCH3DataPath { get; set; }
+    public static string deltaruneCH4DataPath { get; set; }
+    public static bool processDeltaruneCH1Mods { get; set; }
+    public static bool processDeltaruneCH2Mods { get; set; }
+    public static bool processDeltaruneCH3Mods { get; set; }
+    public static bool processDeltaruneCH4Mods { get; set; }
+    public static string importPreCSXPath { get; set; }
+    public static string importBuiltInCSXPath { get; set; }
+    public static string importPostCSXPath { get; set; }
+    public static string importAfterCSXPath { get; set; }
     public static List<string> invalidCodeNames { get; set; }
     public static int invalidCode { get; set; }
     public static List<string> invalidSpriteNames { get; set; }
@@ -371,20 +405,26 @@ public class GMLoaderProgram
             exportTextureBackgroundOutputPath = config.ExportTextureBackgroundOutputPath;
             exportTextureNoStripOutputPath = config.ExportTextureNoStripOutputPath;
             exportTextureConfigOutputPath = config.ExportTextureConfigOutputPath;
+            textureExclusion = config.TextureExclusion;
             exportBackgroundTextureConfigOutputPath = config.ExportBackgroundTextureConfigOutputPath;
             exportAudioOutputPath = config.ExportAudioOutputPath;
             exportCodeOutputPath = config.ExportCodeOutputPath;
             exportRoomOutputPath = config.ExportRoomOutputPath;
+            deltaruneBasePath = config.DeltaruneBaseDirectory;
+            deltaruneCH1Path = config.DeltaruneCH1Directory;
+            deltaruneCH2Path = config.DeltaruneCH2Directory;
+            deltaruneCH3Path = config.DeltaruneCH3Directory;
+            deltaruneCH4Path = config.DeltaruneCH4Directory;
             string gameExecutable = config.GameExecutable;
             ulong supportedDataHash = config.SupportedDataHash;
-            string importPreCSXPath = config.ImportPreCSX;
-            string importBuiltInCSXPath = config.ImportBuiltinCSX;
-            string importPostCSXPath = config.ImportPostCSX;
-            string importAfterCSXPath = config.ImportAfterCSX;
-            bool compilePreCSX = config.CompilePreCSX;
-            bool compileBuiltInCSX = config.CompileBuiltinCSX;
-            bool compilePostCSX = config.CompilePostCSX;
-            bool compileAfterCSX = config.CompileAfterCSX;
+            importPreCSXPath = config.ImportPreCSX;
+            importBuiltInCSXPath = config.ImportBuiltinCSX;
+            importPostCSXPath = config.ImportPostCSX;
+            importAfterCSXPath = config.ImportAfterCSX;
+            compilePreCSX = config.CompilePreCSX;
+            compileBuiltInCSX = config.CompileBuiltinCSX;
+            compilePostCSX = config.CompilePostCSX;
+            compileAfterCSX = config.CompileAfterCSX;
             compileGML = config.CompileGML;
             compileASM = config.CompileASM;
             string backupDataPath = config.BackupData;
@@ -435,6 +475,8 @@ public class GMLoaderProgram
             defaultBGTileCount = config.DefaultBGTileCount;
             defaultBGFrameTime = config.DefaultBGFrameTime;
             #endregion
+
+            textureExclusionList = textureExclusion.Split(',').ToList();
 
             mkDir(modsPath);
             mkDir(texturesPath);
@@ -564,6 +606,7 @@ public class GMLoaderProgram
                 }
             }
 
+            // exposed variable, can be used in csx script
             defaultDecompSettings = new Underanalyzer.Decompiler.DecompileSettings()
             {
                 RemoveSingleLineBlockBraces = true,
@@ -571,92 +614,33 @@ public class GMLoaderProgram
                 EmptyLineBeforeSwitchCases = true,
             };
 
-            Console.Title = $"GMLoader  -  {Data.GeneralInfo.Name.Content}";
-            Log.Information($"Loaded game {Data.GeneralInfo.Name.Content}");
+            gameName = Data.GeneralInfo.Name.Content;
+
+            Console.Title = $"GMLoader  -  {gameName}";
+            Log.Information($"Loaded game {gameName}");
 
             //CSX Handling
             ScriptOptionsInitialize();
             invalidXdeltaNames = new List<string>();
             invalidXdelta = 0;
 
-            //Compile users script before builtin scripts
-            if (dirPreCSXFiles.Length != 0)
+            // certified toby fox moment, still wip
+            if (gameName == "DELTARUNE")
             {
-                if (compilePreCSX)
-                {
-                    Log.Information("Loading pre-CSX Scripts.");
-                    foreach (string file in dirPreCSXFiles)
-                    {
-                        RunCSharpFile(file);
-                    }
-                }
-                else
-                {
-                    Log.Information("Pre-Loading CSX script is disabled, skipping the process.");
-                }
-            }
-            else if (compilePreCSX)
-            {
-                Log.Debug($"The pre-CSX folder is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPreCSXPath))} , skipping the process.");
-            }
-            else if (compilePreCSX && !dirPreCSXFiles.Any(x => x.EndsWith(".csx")))
-            {
-                Log.Debug($"No pre-CSX script file found. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPreCSXPath))} , skipping the process.");
+                mkDir(deltaruneCH1Path);
+                mkDir(deltaruneCH2Path);
+                mkDir(deltaruneCH3Path);
+                mkDir(deltaruneCH4Path);
+
+                processDeltaruneCH1Mods = HasNonFolderFiles(deltaruneCH1Path);
+                processDeltaruneCH2Mods = HasNonFolderFiles(deltaruneCH2Path);
+                processDeltaruneCH3Mods = HasNonFolderFiles(deltaruneCH3Path);
+                processDeltaruneCH4Mods = HasNonFolderFiles(deltaruneCH4Path);
+
+                
             }
 
-            //Compile builtin scripts
-            if (dirBuiltInCSXFiles.Length != 0)
-            {
-                if (compileBuiltInCSX)
-                {
-                    Log.Information("Loading builtin-CSX scripts.");
-                    // Had to be done on GMLoader's side because of VYaml issues
-                    importGraphic();
-                    foreach (string file in dirBuiltInCSXFiles)
-                    {
-                        RunCSharpFile(file);
-                    }
-                }
-                else
-                {
-                    Log.Information("Loading builtin-CSX script is disabled, skipping the process.");
-                }
-            }
-            else if (compileBuiltInCSX)
-            {
-                Log.Information($"The builtin-CSX folder path is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importBuiltInCSXPath))} , skipping the process.");
-            }
-            else if (compileBuiltInCSX && !dirBuiltInCSXFiles.Any(x => x.EndsWith(".csx")))
-            {
-                Log.Information($"No builtin-CSX script file found at {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importBuiltInCSXPath))} , skipping the process.");
-            }
-
-            //Compile users script after builtin scripts
-
-            if (dirPostCSXFiles.Length != 0)
-            {
-                if (compilePostCSX)
-                {
-                    
-                    Log.Information("Loading post-CSX Scripts.");
-                    foreach (string file in dirPostCSXFiles)
-                    {
-                        RunCSharpFile(file);
-                    }
-                }
-                else
-                {
-                    Log.Information("Loading post-CSX script is disabled, skipping the process.");
-                }
-            }
-            else if (compilePostCSX)
-            {
-                Log.Debug($"The post-CSX folder is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPostCSXPath))} , skipping the process.");
-            }
-            else if (compilePostCSX && !dirPostCSXFiles.Any(x => x.EndsWith(".csx")))
-            {
-                Log.Debug($"No post-CSX script file found At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPostCSXPath))} , skipping the process.");
-            }
+            processCSXScripts(dirPreCSXFiles, dirBuiltInCSXFiles, dirPostCSXFiles, dirAfterCSXFiles);
 
             Log.Information("Recompiling the data...");
             using (var stream = new FileStream(gameDataPath, FileMode.Create, FileAccess.ReadWrite))
@@ -1035,6 +1019,64 @@ public class GMLoaderProgram
         }
     }
 
+    public static void DeleteEmptyFolders(string path)
+    {
+        if (!Directory.Exists(path))
+        {
+            Log.Error($"{path} doesn't exists");
+            return;
+        }
+
+        foreach (var directory in Directory.GetDirectories(path))
+        {
+            DeleteEmptyFolders(directory);
+        }
+
+        try
+        {
+            var files = Directory.GetFiles(path);
+            var subDirs = Directory.GetDirectories(path);
+
+            if (files.Length == 0 && subDirs.Length == 0 && path != Path.GetPathRoot(path))
+            {
+                Directory.Delete(path);
+                Log.Information($"Deleted empty folder: {path}");
+            }
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Log.Error($"Access denied: {ex.Message}");
+        }
+        catch (DirectoryNotFoundException ex)
+        {
+            Log.Error($"Directory not found: {ex.Message}");
+        }
+        catch (IOException ex)
+        {
+            Log.Error($"IO error: {ex.Message}");
+        }
+    }
+
+    public static bool HasNonFolderFiles(string directoryPath)
+    {
+        // Check if current directory has any files
+        if (Directory.GetFiles(directoryPath).Length > 0)
+        {
+            return true;
+        }
+
+        // Recursively check subdirectories
+        foreach (var subdirectory in Directory.GetDirectories(directoryPath))
+        {
+            if (HasNonFolderFiles(subdirectory))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static ulong ComputeFileHash64(string filePath)
     {
         using (var fileStream = File.OpenRead(filePath))
@@ -1286,6 +1328,8 @@ public class GMLoaderProgram
 
         Log.Information($"Done converting, files has been copied into {convertOutputPath}");
 
+        DeleteEmptyFolders(convertOutputPath);
+
         Console.WriteLine("\nWould you like to delete the residual exported files? (Y/N)");
 
         string response = Console.ReadLine()?.ToLower();
@@ -1307,6 +1351,87 @@ public class GMLoaderProgram
         else
         {
             Environment.Exit(0);
+        }
+    }
+
+    public static void processCSXScripts(string[] preCSXFiles, string[] builtInCSXFiles, string[] postCSXFiles, string[] afterCSXFiles)
+    {
+        if (preCSXFiles.Length != 0)
+        {
+            if (compilePreCSX)
+            {
+                Log.Information("Loading pre-CSX Scripts.");
+                foreach (string file in preCSXFiles)
+                {
+                    RunCSharpFile(file);
+                }
+            }
+            else
+            {
+                Log.Information("Pre-Loading CSX script is disabled, skipping the process.");
+            }
+        }
+        else if (compilePreCSX)
+        {
+            Log.Debug($"The pre-CSX folder is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPreCSXPath))} , skipping the process.");
+        }
+        else if (compilePreCSX && !preCSXFiles.Any(x => x.EndsWith(".csx")))
+        {
+            Log.Debug($"No pre-CSX script file found. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPreCSXPath))} , skipping the process.");
+        }
+
+        //Compile builtin scripts
+        if (builtInCSXFiles.Length != 0)
+        {
+            if (compileBuiltInCSX)
+            {
+                Log.Information("Loading builtin-CSX scripts.");
+                // Had to be done on GMLoader's side because of VYaml issues
+                importGraphic();
+                foreach (string file in builtInCSXFiles)
+                {
+                    RunCSharpFile(file);
+                }
+            }
+            else
+            {
+                Log.Information("Loading builtin-CSX script is disabled, skipping the process.");
+            }
+        }
+        else if (compileBuiltInCSX)
+        {
+            Log.Information($"The builtin-CSX folder path is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importBuiltInCSXPath))} , skipping the process.");
+        }
+        else if (compileBuiltInCSX && !builtInCSXFiles.Any(x => x.EndsWith(".csx")))
+        {
+            Log.Information($"No builtin-CSX script file found at {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importBuiltInCSXPath))} , skipping the process.");
+        }
+
+        //Compile users script after builtin scripts
+
+        if (postCSXFiles.Length != 0)
+        {
+            if (compilePostCSX)
+            {
+
+                Log.Information("Loading post-CSX Scripts.");
+                foreach (string file in postCSXFiles)
+                {
+                    RunCSharpFile(file);
+                }
+            }
+            else
+            {
+                Log.Information("Loading post-CSX script is disabled, skipping the process.");
+            }
+        }
+        else if (compilePostCSX)
+        {
+            Log.Debug($"The post-CSX folder is empty. At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPostCSXPath))} , skipping the process.");
+        }
+        else if (compilePostCSX && !postCSXFiles.Any(x => x.EndsWith(".csx")))
+        {
+            Log.Debug($"No post-CSX script file found At {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importPostCSXPath))} , skipping the process.");
         }
     }
 
