@@ -138,6 +138,15 @@ void DumpSprite(UndertaleSprite sprite)
         Log.Error("Skipped sprite that has an empty name to prevent an exception");
         return;
     }
+    foreach (string i in textureExclusionList)
+    {
+        if (spriteName.Contains(i))
+        {
+            Log.Information($"Skipped {spriteName} because it's included on the exclusion list");
+            return;
+        }
+    }
+
     Log.Information($"Exporting {sprite.Name.Content}");
     int spriteFrame = 0;
     int originX = 0;
