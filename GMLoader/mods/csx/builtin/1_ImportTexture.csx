@@ -658,7 +658,12 @@ public class Packer
     private void ScanForTextures(string _Path)
     {
         DirectoryInfo di = new DirectoryInfo(_Path);
-        FileInfo[] files = di.GetFiles("*", SearchOption.AllDirectories);
+        //FileInfo[] files = di.GetFiles("*", SearchOption.AllDirectories);
+
+        // need to be sorted because of nostrip style
+        FileInfo[] files = di.GetFiles("*", SearchOption.AllDirectories)
+            .OrderBy(f => Regex.Replace(f.Name, @"\d+", m => m.Value.PadLeft(10, '0')))
+            .ToArray();
         // Filtered files should be used but I'm not enforcing sprite to have config files
         //FileInfo[] filteredFiles = files.Where(file => 
             //spritesToImport.Contains(file.Name, StringComparer.OrdinalIgnoreCase)).ToArray();
@@ -668,6 +673,7 @@ public class Packer
         foreach (FileInfo fi in files)
         {
             fullName = fi.FullName;
+            //if (Path.GetExtension(fullName) == ".yaml") return;
             Log.Information($"Importing {Path.GetFileName(fullName)}");
             SpriteType spriteType = GetSpriteType(fullName);
             string ext = Path.GetExtension(fullName);
@@ -711,7 +717,7 @@ public class Packer
                 int frames = 1;
                 string spriteName = Path.GetFileNameWithoutExtension(fi.Name);
                 DirectoryInfo grandparentDir = fi.Directory?.Parent;
-                if (Path.GetDirectoryName(grandparentDir.FullName) != nostripStr)
+                if (Path.GetFileName(grandparentDir.FullName) != nostripStr)
                 {
                     if (spriteDictionary.TryGetValue(spriteName, out SpriteData spriteProps))
                     {
