@@ -403,9 +403,10 @@ public class GMLoaderProgram
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
 
-            string logFile = "GMLoader.log";
-            string configFile = "GMLoader.ini";
-            
+            string baseDir = AppContext.BaseDirectory;
+            string logFile = Path.Combine(baseDir, "GMLoader.log");
+            string configFile = Path.Combine(baseDir, "GMLoader.ini");
+
             if (File.Exists(logFile))
                 File.Delete(logFile);
 
@@ -419,7 +420,7 @@ public class GMLoaderProgram
 
             if (!File.Exists(configFile))
             {
-                Log.Information("Missing GMLoader.ini file \n\n\nPress any key to close...");
+                Log.Information($"Missing GMLoader.ini while trying to find it on {logFile}\n\n\nPress any key to close...");
                 Console.ReadKey();
                 Environment.Exit(0);
             }
