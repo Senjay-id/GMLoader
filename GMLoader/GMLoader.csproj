@@ -56,7 +56,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="14.6.0" />
+    <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="14.7.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -89,6 +89,30 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="GameSpecificData\Definitions\deltarune.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="GameSpecificData\Definitions\gamemaker.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="GameSpecificData\Definitions\undertale.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="GameSpecificData\README.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="GameSpecificData\Underanalyzer\deltarune.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="GameSpecificData\Underanalyzer\gamemaker.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="GameSpecificData\Underanalyzer\template.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="GameSpecificData\Underanalyzer\undertale.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="GMLoader.ini">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -113,7 +137,16 @@
     <None Update="mods\csx\builtin\3_NewObjectManipulation.csx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="mods\csx\builtin\4_ImportAudio.csx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="mods\csx\builtin\4_ImportAudioConfig.csx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="mods\csx\builtin\4_ImportGML.csx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="mods\csx\builtin\5_ImportGML.csx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="mods\csx\builtin\5_PrependGML.csx">
@@ -122,10 +155,22 @@
     <None Update="mods\csx\builtin\6_AppendGML.csx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="mods\csx\builtin\6_PrependGML.csx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="mods\csx\builtin\7_AppendGML.csx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="mods\csx\builtin\7_ExistingObjectManipulation.csx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="mods\csx\builtin\8_ExistingObjectManipulation.csx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="mods\csx\builtin\8_ImportRoom.csx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="mods\csx\builtin\9_ImportRoom.csx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="mods\csx\builtin\exportscript\exportAudio.csx">

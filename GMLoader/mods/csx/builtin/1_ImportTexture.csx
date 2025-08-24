@@ -69,7 +69,7 @@ string importFolder = texturesPath;
 
 CheckDuplicates();
 
-string[] dirFiles = Directory.GetFiles(importFolder);
+string[] dirFiles = Directory.GetFiles(importFolder, "*.*", SearchOption.AllDirectories);
 if (dirFiles.Length == 0)
 {
     Log.Debug("The texture import folder path is empty. At " + Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, importFolder)) + " , skipping the process");
@@ -152,6 +152,7 @@ try
 
                 // String processing
                 string stripped = Path.GetFileNameWithoutExtension(n.Texture.Source);
+                bool isSubimages = n.Texture.Source.IndexOf("subimages", StringComparison.OrdinalIgnoreCase) >= 0;
 
                 SpriteType spriteType = GetSpriteType(n.Texture.Source);
 
@@ -184,7 +185,7 @@ try
                         }
                     else
                     {
-                        Log.Warning($"Warning: Sprite properties not found for {spriteName} this happens because the configuration entry for the sprite doesn't exists");
+                        Log.Information($"No sprite properties found for {bgSpriteName}, using default .ini settings");
                     }
 
                     UndertaleBackground background = Data.Backgrounds.ByName(stripped);
@@ -250,8 +251,14 @@ try
                         frame = 0;
                         Log.Debug("Image " + stripped + " has an invalid frame number, assigning the frame to 0");
                     }
-    
-                    if (spriteDictionary.TryGetValue(spriteName, out SpriteData spriteProps))
+
+                    if (isSubimages)
+                    {
+                        // the sprite is intended to be imported as subimages, only show debug.
+                        Log.Debug($"{spriteName} will be imported using default .ini settings");
+                        spriteName = Path.GetFileName(Path.GetDirectoryName(n.Texture.Source));
+                    }
+                    else if (spriteDictionary.TryGetValue(spriteName, out SpriteData spriteProps))
                     {
                         xCoordinate = spriteProps.yml_x.Value;
                         yCoordinate = spriteProps.yml_y.Value;
@@ -269,7 +276,7 @@ try
                     }
                     else
                     {
-                        Log.Warning($"Warning: Sprite properties not found for {spriteName} this happens because the configuration entry for the sprite doesn't exists");
+                        Log.Information($"No sprite properties found for {spriteName}, using default .ini settings");
                     }
 
                     if (spritesStartAt1.Contains(spriteName))
@@ -331,13 +338,25 @@ try
                         continue;
                     }
 
-                    if (frame > sprite.Textures.Count - 1)
+                // Replacing existing sprite part
+
+                    if (isSubimages)
+                    {
+                        int textureCount = sprite.Textures.Count;
+                        frame = ExtractSecondToLastNumber(stripped) ?? 0;
+                    }
+                    else if (frame > sprite.Textures.Count - 1)
                     {
                         while (frame > sprite.Textures.Count - 1)
                         {
                             sprite.Textures.Add(texentry);
                         }
                         continue;
+                    }
+
+                    if (frame > sprite.Textures.Count - 1)
+                    {
+                        sprite.Textures.Add(texentry);
                     }
 
                     sprite.Textures[frame] = texentry;
@@ -658,7 +677,12 @@ public class Packer
     private void ScanForTextures(string _Path)
     {
         DirectoryInfo di = new DirectoryInfo(_Path);
-        FileInfo[] files = di.GetFiles("*", SearchOption.AllDirectories);
+        //FileInfo[] files = di.GetFiles("*", SearchOption.AllDirectories);
+
+        // need to be sorted because of nostrip style
+        FileInfo[] files = di.GetFiles("*", SearchOption.AllDirectories)
+            .OrderBy(f => Regex.Replace(f.Name, @"\d+", m => m.Value.PadLeft(10, '0')))
+            .ToArray();
         // Filtered files should be used but I'm not enforcing sprite to have config files
         //FileInfo[] filteredFiles = files.Where(file => 
             //spritesToImport.Contains(file.Name, StringComparer.OrdinalIgnoreCase)).ToArray();
@@ -668,6 +692,7 @@ public class Packer
         foreach (FileInfo fi in files)
         {
             fullName = fi.FullName;
+            if (Path.GetExtension(fullName) == ".yaml") continue;
             Log.Information($"Importing {Path.GetFileName(fullName)}");
             SpriteType spriteType = GetSpriteType(fullName);
             string ext = Path.GetExtension(fullName);
@@ -711,7 +736,7 @@ public class Packer
                 int frames = 1;
                 string spriteName = Path.GetFileNameWithoutExtension(fi.Name);
                 DirectoryInfo grandparentDir = fi.Directory?.Parent;
-                if (Path.GetDirectoryName(grandparentDir.FullName) != nostripStr)
+                if (Path.GetFileName(grandparentDir.FullName) != nostripStr)
                 {
                     if (spriteDictionary.TryGetValue(spriteName, out SpriteData spriteProps))
                     {
@@ -988,6 +1013,33 @@ public static SpriteType GetSpriteType(string path)
         return SpriteType.Sprite;
     }
     return SpriteType.Unknown;
+}
+
+public static int? ExtractSecondToLastNumber(string input)
+{
+    if (string.IsNullOrEmpty(input))
+        return null;
+    
+    // Find the last underscore
+    int lastUnderscoreIndex = input.LastIndexOf('_');
+    if (lastUnderscoreIndex == -1 || lastUnderscoreIndex == 0)
+        return null;
+    
+    // Find the underscore before the last one
+    int secondLastUnderscoreIndex = input.LastIndexOf('_', lastUnderscoreIndex - 1);
+    if (secondLastUnderscoreIndex == -1)
+        return null;
+    
+    // Extract the number between the two underscores
+    int startIndex = secondLastUnderscoreIndex + 1;
+    int length = lastUnderscoreIndex - startIndex;
+    
+    if (length <= 0)
+        return null;
+    
+    ReadOnlySpan<char> numberSpan = input.AsSpan(startIndex, length);
+    
+    return int.TryParse(numberSpan, out int result) ? result : null;
 }
 
 void CheckDuplicates()

@@ -1,53 +1,84 @@
 string codeFolder = exportCodeOutputPath;
 Directory.CreateDirectory(codeFolder);
 
-GlobalDecompileContext globalDecompileContext = new(Data);
-Underanalyzer.Decompiler.IDecompileSettings decompilerSettings = Data.ToolInfo.DecompilerSettings;
+var globalDecompileContext = new GlobalDecompileContext(Data);
+var decompilerSettings = Data.ToolInfo.DecompilerSettings;
 List<UndertaleCode> toDump = Data.Code.Where(c => c.ParentEntry is null).ToList();
 
-int coreCount = Environment.ProcessorCount - 1;
-// If you want to use all your cores just uncomment the code below
-//coreCount = Environment.ProcessorCount;
+int coreCount = CalculateOptimalCoreCount();
 
-//Realistically no pc should ever only have a single core
-if (coreCount == 0)
-    coreCount = 1;
+Log.Information($"Using {coreCount} cores to dump code to: {Path.GetFullPath(codeFolder)}");
 
-var options = new ParallelOptions { MaxDegreeOfParallelism = coreCount }; // Adjust the degree of parallelism
-Log.Information($"Using {coreCount} cores to dump the code");
+DumpCode();
 
-await DumpCode();
+Log.Information($"All code has been exported to {Path.GetFullPath(codeFolder)}");
 
-Log.Information("All code has been exported to " + Path.GetFullPath(codeFolder));
-
-string GetFolder(string path)
+int CalculateOptimalCoreCount()
 {
-    return Path.GetDirectoryName(path) + Path.DirectorySeparatorChar;
-}
-
-async Task DumpCode()
-{
-    await Task.Run(() => Parallel.ForEach(toDump, DumpCode));
-}
-
-void DumpCode(UndertaleCode code)
-{
+    int availableCores = Environment.ProcessorCount;
     
-    if (code is not null)
+    // Reserve one core for system operations, but ensure at least 1 core is used
+    return Math.Max(1, availableCores - 1);
+    
+    // this can be used alternatively
+    // return availableCores;
+}
+
+void DumpCode()
+{
+    var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = coreCount };
+    Parallel.ForEach(toDump, parallelOptions, DumpSingleCode);
+}
+
+void DumpSingleCode(UndertaleCode code)
+{
+    if (code is null)
     {
-        string path = Path.Combine(codeFolder, code.Name.Content + ".gml");
-        Log.Information($"Exporting {code.Name.Content}");
-        try
-        {
-            File.WriteAllText(path, (code != null 
-                ? new Underanalyzer.Decompiler.DecompileContext(globalDecompileContext, code, decompilerSettings).DecompileToString() 
-                : ""));
-        }
-        catch (Exception e)
-        {
-            Log.Error($"DECOMPILER FAILED!\n\n {e.ToString()}");
-            File.WriteAllText(path, "/*\nDECOMPILER FAILED!\n\n" + e.ToString() + "\n*/");
-        }
+        Log.Warning("Encountered null code entry");
+        return;
     }
+
+    string fileName = $"{code.Name.Content}.gml";
+    string filePath = Path.Combine(codeFolder, fileName);
     
+    Log.Information($"Exporting: {code.Name.Content}");
+    
+    try
+    {
+        string decompiledCode = DecompileCode(code);
+        File.WriteAllText(filePath, decompiledCode);
+    }
+    catch (Exception ex)
+    {
+        HandleDecompilationError(filePath, code.Name.Content, ex);
+    }
+}
+
+string DecompileCode(UndertaleCode code)
+{
+    if (code is null)
+        return string.Empty;
+    
+    var context = new Underanalyzer.Decompiler.DecompileContext(
+        globalDecompileContext, code, decompilerSettings);
+    
+    return context.DecompileToString();
+}
+
+void HandleDecompilationError(string filePath, string codeName, Exception exception)
+{
+    Log.Error($"Decompilation failed for {codeName}: {exception.Message}");
+    
+    string errorContent = $"/*\nDECOMPILATION FAILED: {codeName}\n\n" +
+                         $"Error: {exception.Message}\n\n" +
+                         $"Stack Trace:\n{exception.StackTrace}\n*/";
+    
+    try
+    {
+        File.WriteAllText(filePath, errorContent);
+    }
+    catch (Exception fileEx)
+    {
+        Log.Error($"Failed to write error file for {codeName}: {fileEx.Message}");
+    }
 }

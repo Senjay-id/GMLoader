@@ -14,7 +14,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GMLoader - Filediff", "..\G
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GMLoader - xxHash", "..\GMLoader - xxHash\GMLoader - xxHash.csproj", "{BF3BF1B7-58E8-44ED-8C11-0E42D6DDB2A5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GMLoader - Xdelta", "..\GMLoader - Xdelta\GMLoader - Xdelta.csproj", "{74260B4B-D01E-4241-A13E-1F8C6DF01E37}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GMLoader - xDelta", "..\GMLoader - xDelta\GMLoader - xDelta.csproj", "{74260B4B-D01E-4241-A13E-1F8C6DF01E37}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
