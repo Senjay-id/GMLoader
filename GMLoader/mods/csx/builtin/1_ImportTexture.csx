@@ -255,7 +255,7 @@ try
                     if (isSubimages)
                     {
                         // the sprite is intended to be imported as subimages, only show debug.
-                        Log.Debug($"{spriteName} will be imported using default .ini settings");
+                        Log.Debug($"{spriteName} will be imported as subimage");
                         spriteName = Path.GetFileName(Path.GetDirectoryName(n.Texture.Source));
                     }
                     else if (spriteDictionary.TryGetValue(spriteName, out SpriteData spriteProps))
@@ -342,7 +342,6 @@ try
 
                     if (isSubimages)
                     {
-                        int textureCount = sprite.Textures.Count;
                         frame = ExtractSecondToLastNumber(stripped) ?? 0;
                     }
                     else if (frame > sprite.Textures.Count - 1)
@@ -361,26 +360,29 @@ try
 
                     sprite.Textures[frame] = texentry;
 
-                    sprite.OriginX = xCoordinate;
-                    sprite.OriginY = yCoordinate;
-                    sprite.BBoxMode = boundingBoxType;
-
-                    if (boundingBoxType == 2)
+                    if (!isSubimages)
                     {
-                        sprite.MarginLeft = leftCollision;
-                        sprite.MarginRight = rightCollision;
-                        sprite.MarginTop = topCollision;
-                        sprite.MarginBottom = bottomCollision;
-                    }
+                        sprite.OriginX = xCoordinate;
+                        sprite.OriginY = yCoordinate;
+                        sprite.BBoxMode = boundingBoxType;
 
-                    sprite.GMS2PlaybackSpeedType = (AnimSpeedType)speedType;
-                    sprite.GMS2PlaybackSpeed = frameSpeed;
-                    sprite.IsSpecialType = isSpecial;
-                    sprite.SVersion = specialVer;
-                    sprite.SepMasks = (UndertaleSprite.SepMaskType)sepMaskType;
-                    sprite.Transparent = transparent;
-                    sprite.Smooth = smooth;
-                    sprite.Preload = preload;
+                        if (boundingBoxType == 2)
+                        {
+                            sprite.MarginLeft = leftCollision;
+                            sprite.MarginRight = rightCollision;
+                            sprite.MarginTop = topCollision;
+                            sprite.MarginBottom = bottomCollision;
+                        }
+
+                        sprite.GMS2PlaybackSpeedType = (AnimSpeedType)speedType;
+                        sprite.GMS2PlaybackSpeed = frameSpeed;
+                        sprite.IsSpecialType = isSpecial;
+                        sprite.SVersion = specialVer;
+                        sprite.SepMasks = (UndertaleSprite.SepMaskType)sepMaskType;
+                        sprite.Transparent = transparent;
+                        sprite.Smooth = smooth;
+                        sprite.Preload = preload;
+                    }
 
                     // Update sprite dimensions
                     uint oldWidth = sprite.Width, oldHeight = sprite.Height;
