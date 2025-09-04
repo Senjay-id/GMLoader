@@ -1,5 +1,7 @@
 // // Original script by Kneesnap, updated by Grossley, modified by Senjay for GMLoader
 string exportedSoundsDir = exportAudioOutputPath;
+
+mkDir(exportedSoundsDir);
 mkDir(exportAudioConfigOutputPath);
 
 // Prompt for export settings.
@@ -111,9 +113,9 @@ void DumpSound(UndertaleSound sound)
     if (groupedExport)
     {
         //soundFilePath = Path.Combine(exportedSoundsDir, sound.AudioGroup.Name.Content, soundName);
+        //mkDir(Path.Combine(exportedSoundsDir, sound.AudioGroup.Name.Content));
         soundFilePath = Path.Combine(exportedSoundsDir, soundName); //GMLoader has no way to import external audiogroup
-        mkDir(Path.Combine(exportedSoundsDir, sound.AudioGroup.Name.Content));
-        Directory.CreateDirectory(Path.Combine(exportedSoundsDir, sound.AudioGroup.Name.Content));
+        //Directory.CreateDirectory(Path.Combine(exportedSoundsDir, sound.AudioGroup.Name.Content));
     }
     else
     {

@@ -1887,11 +1887,12 @@ public class GMLoaderProgram
         string outputAudioConfigFolder = Path.Combine(outputFolder, Path.GetFileName(exportAudioConfigOutputPath));
         string moddedOutputAudioConfigFolder = Path.Combine(moddedFolder, Path.GetFileName(exportAudioConfigOutputPath));
 
+        mkDir(outputAudioFolder);
+        mkDir(outputAudioConfigFolder);
+
         var audioFiles = Directory.GetFiles(outputAudioFolder, "*.*", SearchOption.AllDirectories)
             .Select(f => Path.GetFileNameWithoutExtension(f))
             .ToList();
-
-        mkDir(outputAudioConfigFolder);
 
         foreach (var yamlFile in Directory.GetFiles(moddedOutputAudioConfigFolder, "*.yaml", SearchOption.AllDirectories))
         {
