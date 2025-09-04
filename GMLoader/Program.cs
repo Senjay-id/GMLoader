@@ -53,6 +53,7 @@ public interface IConfig
     public string ConvertModdedData { get; }
     public string ExportAudioScriptPath { get; }
     public string ExportAudioOutputPath { get; }
+    public string ExportAudioConfigOutputPath { get; }
     public string ExportTextureScriptPath { get; }
     public string ExportTextureOutputPath { get; }
     public string ExportTextureBackgroundOutputPath { get; }
@@ -292,6 +293,7 @@ public class GMLoaderProgram
     public static List<string> textureExclusionList { get; set; }
     public static string exportBackgroundTextureConfigOutputPath { get; set; }
     public static string exportAudioOutputPath { get; set; }
+    public static string exportAudioConfigOutputPath { get; set; }
     public static string exportGameObjectOutputPath { get; set; }
     public static string exportCodeOutputPath { get; set; }
     public static string exportRoomOutputPath { get; set; }
@@ -459,6 +461,7 @@ public class GMLoaderProgram
             textureExclusion = config.TextureExclusion;
             exportBackgroundTextureConfigOutputPath = config.ExportBackgroundTextureConfigOutputPath;
             exportAudioOutputPath = config.ExportAudioOutputPath;
+            exportAudioConfigOutputPath = config.ExportAudioConfigOutputPath;
             exportCodeOutputPath = config.ExportCodeOutputPath;
             exportRoomOutputPath = config.ExportRoomOutputPath;
             deltaruneBasePath = config.DeltaruneBaseDirectory;
@@ -1485,6 +1488,12 @@ public class GMLoaderProgram
             MergeSpriteConfigurations(convertOutputPath);
         }
 
+        if (exportAudio)
+        {
+            CopyVanillaAudioConfig(moddedExportPath, convertOutputPath);
+            MergeAudioConfigurations(convertOutputPath);
+        }
+
         RefactorIntoGMLoaderFormat(convertOutputPath);
 
         Log.Information($"Done converting, files has been copied into {convertOutputPath}");
@@ -1871,6 +1880,75 @@ public class GMLoaderProgram
 
     }
 
+    public static void CopyVanillaAudioConfig(string moddedFolder, string outputFolder)
+    {
+        Log.Information("Copying vanilla audio configuration files");
+        string outputAudioFolder = Path.Combine(outputFolder, Path.GetFileName(exportAudioOutputPath));
+        string outputAudioConfigFolder = Path.Combine(outputFolder, Path.GetFileName(exportAudioConfigOutputPath));
+        string moddedOutputAudioConfigFolder = Path.Combine(moddedFolder, Path.GetFileName(exportAudioConfigOutputPath));
+
+        var audioFiles = Directory.GetFiles(outputAudioFolder, "*.*", SearchOption.AllDirectories)
+            .Select(f => Path.GetFileNameWithoutExtension(f))
+            .ToList();
+
+        mkDir(outputAudioConfigFolder);
+
+        foreach (var yamlFile in Directory.GetFiles(moddedOutputAudioConfigFolder, "*.yaml", SearchOption.AllDirectories))
+        {
+            string fileNameWithoutExt = Path.GetFileNameWithoutExtension(yamlFile);
+
+            if (audioFiles.Contains(fileNameWithoutExt))
+            {
+                string destPath = Path.Combine(outputAudioConfigFolder, Path.GetFileName(yamlFile));
+
+                try
+                {
+                    File.Copy(yamlFile, destPath, overwrite: true);
+                    Log.Information($"Copied {Path.GetFileName(yamlFile)}");
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Failed to copy {yamlFile}: {ex.Message}");
+                }
+            }
+        }
+    }
+
+    public static void MergeAudioConfigurations(string basePath)
+    {
+        Log.Information("Merging audio configuration files");
+        string audioConfigFileName = "MyModdedAudioConfig.yaml";
+        string audioConfigRelativePath = Path.Combine(basePath, Path.GetFileName(exportAudioConfigOutputPath));
+        mkDir(audioConfigRelativePath);
+        string[] audioConfigFiles = Directory.GetFiles(audioConfigRelativePath, "*.yaml", SearchOption.TopDirectoryOnly);
+
+        if (audioConfigFiles.Length != 0)
+        {
+            using (StreamWriter writer = new StreamWriter(audioConfigFileName))
+            {
+                foreach (string file in audioConfigFiles)
+                {
+                    Log.Information($"Merging {Path.GetFileName(file)}");
+
+                    string fileContent = File.ReadAllText(file);
+                    writer.WriteLine(fileContent);
+                }
+            }
+            foreach (string file in audioConfigFiles)
+            {
+                File.Delete(file);
+                Log.Debug($"Deleted: {Path.GetFileName(file)}");
+            }
+        }
+        else
+        {
+            Log.Information("No audio configuration files found, skipping the process");
+        }
+
+        if (File.Exists(audioConfigFileName))
+            File.Move(audioConfigFileName, Path.Combine(audioConfigRelativePath, audioConfigFileName));
+    }
+
     public static void RefactorIntoGMLoaderFormat(string targetFolder)
     {
         Log.Information("Refactoring into GMLoader format");
@@ -1883,6 +1961,12 @@ public class GMLoaderProgram
         string spriteConfigPath = Path.Combine(targetFolder, Path.GetFileName(exportTextureConfigOutputPath));
         string spriteConfigRelativePath = Path.Combine(Path.GetFileName(Path.GetDirectoryName(texturesConfigPath)), Path.GetFileName(texturesConfigPath)); // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHHHHHHHHHHH
         string refactoredSpriteConfigPath = Path.Combine(targetFolder, spriteConfigRelativePath);
+
+        string _audioPath = Path.Combine(targetFolder, Path.GetFileName(exportAudioOutputPath));
+        string refactoredAudioPath = Path.Combine(targetFolder, Path.GetFileName(audioPath));
+
+        string _audioConfigPath = Path.Combine(targetFolder, Path.GetFileName(exportAudioConfigOutputPath));
+        string refactoredAudioConfigPath = Path.Combine(targetFolder, Path.GetFileName(audioConfigPath));
 
         string _objectPath = Path.Combine(targetFolder, Path.GetFileName(exportGameObjectOutputPath));
 
@@ -1897,6 +1981,12 @@ public class GMLoaderProgram
 
         if (Directory.Exists(spriteConfigPath))
             Directory.Move(spriteConfigPath, refactoredSpriteConfigPath);
+
+        if (Directory.Exists(_audioPath))
+            Directory.Move(_audioPath, refactoredAudioPath);
+
+        if (Directory.Exists(_audioConfigPath))
+            Directory.Move(_audioConfigPath, refactoredAudioConfigPath);
 
         //Yes this is intended
         if (Directory.Exists(_objectPath))
