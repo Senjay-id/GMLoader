@@ -17,8 +17,7 @@ Contains User guide and Modders guide
 * Clone the project
 * Compile [UndertalModLib and Underanalyzer](https://github.com/krzys-h/UndertaleModTool) then put their dll inside the lib folder
 * Add the reference of umtlib and underanalyzer
-* Open the solution and build
-
+* Open the solution and publish GMLoader with the deployment mode self contained and check enable readytorun compilation under the file publish option
 ### Credits
 [UTMT Team](https://github.com/krzys-h/UndertaleModTool) - All of this isn't possible without the UTMT tool and library
 
