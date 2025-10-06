@@ -1,16 +1,14 @@
 GMLoader is a program that can recompile non-YYC GM:Studio games data using [UndertaleModLib](https://github.com/krzys-h/UndertaleModTool).
 
 ### Features
-* Adding or replacing GML assets by loading the gml files inside GameFolder/mods/code/*.gml
-* Adding or replacing textures by loading the texture files inside GameFolder/mods/textures/*.png
-* Manipulate sprite properties by making sprite configuration files inside GameFolder/mods/config/textures_properties/*.yaml
-* Append GML code by importing the gml files inside GameFolder/mods/code/appendgml/Any Folder Name/*.gml
-* Prepend GML code by importing the gml files inside GameFolder/mods/code/prependgml/Any Folder Name/*.gml
-* Existing GameObjects Manipulation by loading configuration files inside GameFolder/mods/config/existing_object/*.json
-* Add and Manipulate new GameObjects by loading configuration files inside GameFolder/mods/config/new_object/*.json
-* Import shaders by loading exported shader files inside GameFolder/mods/shader/*any_shader_folder
-* Import rooms by loading the room files inside GameFolder/mods/room/*.json
-* Load your own custom CSharp Script files inside GameFolder/csx/pre/*.csx or GameFolder/csx/post/*.csx
+* Adding or replacing GML assets
+* Adding or replacing textures
+* Manipulate sprite properties
+* Append or Prepend GML code
+* Existing or Adding New GameObjects Manipulation
+* Import shaders (currently not working)
+* Import rooms (experimental)
+* Load your own custom CSharp Script files
 
 ### [Wiki](https://github.com/Senjay-id/GMLoader/wiki)
 Contains User guide and Modders guide
@@ -27,5 +25,3 @@ Contains User guide and Modders guide
 [GMLML](https://github.com/BlurOne-GIT/GML-Mod-Loader) - For the ProofOfConcept Code
 
 Eldoofus - Helping my skill issues
-
-[Crusenho](https://crusenho.itch.io/) - Executable Icon
