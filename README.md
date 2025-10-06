@@ -2,10 +2,9 @@ GMLoader is a program that can recompile non-YYC GM:Studio games data using [Und
 
 ### Features
 * Adding or replacing GML assets
-* Adding or replacing textures
-* Manipulate sprite properties
+* Adding or replacing sprite and tilesets also modify their properties
 * Append or Prepend GML code
-* Existing or Adding New GameObjects Manipulation
+* Existing or new GameObjects Manipulation including adding a new one
 * Import shaders (currently not working)
 * Import rooms (experimental)
 * Load your own custom CSharp Script files
