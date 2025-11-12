@@ -1,37 +1,39 @@
-﻿#region Using Directives
+#region Using Directives
+using Config.Net;
+using ImageMagick;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Serilog;
+using Serilog.Events;
 using Standart.Hash.xxHash;
+using System.Collections;
+using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Reflection;
-using System.Text.RegularExpressions;
-using System.Text.Json;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Collections;
+using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Underanalyzer.Compiler;
+using Underanalyzer.Decompiler;
 using UndertaleModLib;
+using UndertaleModLib.Compiler;
 using UndertaleModLib.Decompiler;
 using UndertaleModLib.Models;
 using UndertaleModLib.Scripting;
 using UndertaleModLib.Util;
-using Serilog.Events;
-using Config.Net;
-using ImageMagick;
-using Newtonsoft.Json;
-using xdelta3.net;
-using Underanalyzer.Compiler;
-using Underanalyzer.Decompiler;
-using System.Text;
-using VYaml.Serialization;
 using VYaml.Annotations;
-using UndertaleModLib.Compiler;
-using Microsoft.CodeAnalysis;
-using System.Collections.Concurrent;
-using System.IO;
+using VYaml.Serialization;
+using xdelta3.net;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 #endregion
 
 namespace GMLoader;
@@ -383,6 +385,8 @@ public class GMLoaderProgram
     public static int defaultAudioFileID { get; set; }
     public static bool defaultAudioPreload { get; set; }
 
+    public static int exceptionCount { get; set; }
+
     public static Dictionary<string, int> moddedTextureCounts = new Dictionary<string, int>();
     public static List<string> vanillaSpriteList = new List<string>();
     public static List<string> spriteList = new List<string>();
@@ -542,6 +546,7 @@ public class GMLoaderProgram
             defaultAudioPreload = config.DefaultAudioPreload;
             #endregion
 
+            exceptionCount = 0;
             textureExclusionList = textureExclusion.Split(',').ToList();
 
             mkDir(modsPath);
@@ -740,6 +745,7 @@ public class GMLoaderProgram
 
             if (invalidXdelta > 0)
             {
+                exceptionCount++;
                 Log.Information("");
                 Log.Error("Error, Failed to xdelta patch the files below:");
                 foreach (string name in invalidXdeltaNames)
@@ -751,7 +757,7 @@ public class GMLoaderProgram
 
             stopwatch.Stop();
 
-            if (autoGameStart)
+            if (autoGameStart && exceptionCount == 0)
             {
                 Log.Information($"Game Data has been recompiled, Launching the game...\n\nElapsed time: {stopwatch.Elapsed.TotalSeconds:F2} seconds ({stopwatch.ElapsedMilliseconds} ms)");
                 var startInfo = new ProcessStartInfo
@@ -766,7 +772,10 @@ public class GMLoaderProgram
             }
             else
             {
-                Log.Information($"Game Data has been recompiled, you can now launch the modded data through the game executable.\n\nElapsed time: {stopwatch.Elapsed.TotalSeconds:F2} seconds ({stopwatch.ElapsedMilliseconds} ms)\n\n\nPress any key to close...");
+                Log.Information($"Game Data has been recompiled, you can now launch the modded data through the game executable.\n\nElapsed time: {stopwatch.Elapsed.TotalSeconds:F2} seconds ({stopwatch.ElapsedMilliseconds} ms)");
+                if (exceptionCount > 0)
+                    Log.Warning($"\n\nWarning, {exceptionCount} exception has occured while patching the game. Please check the log.");
+                Log.Information("\n\nPress any key to close...");
                 Console.ReadKey();
                 Environment.Exit(0);
             }
@@ -776,12 +785,13 @@ public class GMLoaderProgram
             Log.Error("An error occurred: " + e.Message);
             Console.WriteLine("Press any key to close...");
             Console.ReadKey();
+            Environment.Exit(0);
         }
     }
 
     public static void importConfigDefinedCode(UndertaleModLib.Compiler.CodeImportGroup importGroup)
     {
-        string[] configFiles = Directory.GetFiles(gmlCodePatchPath, "*.yaml*", SearchOption.TopDirectoryOnly)
+        string[] configFiles = Directory.GetFiles(gmlCodePatchPath, "*.yaml", SearchOption.TopDirectoryOnly)
                                   .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
                                   .ToArray();
 
@@ -827,6 +837,7 @@ public class GMLoaderProgram
             }
             catch (Exception e)
             {
+                exceptionCount++;
                 Log.Error($"Failed to process {Path.GetFileName(file)}: {e}");
             }
         }
@@ -846,6 +857,7 @@ public class GMLoaderProgram
             case "findreplace":
                 if (string.IsNullOrEmpty(find))
                 {
+                    exceptionCount++;
                     Log.Error($"Find pattern is empty for {scriptName}, skipping");
                     return;
                 }
@@ -863,6 +875,7 @@ public class GMLoaderProgram
             case "findappend":
                 if (string.IsNullOrEmpty(find))
                 {
+                    exceptionCount++;
                     Log.Error($"Find pattern is empty for {scriptName}, skipping");
                     return;
                 }
@@ -871,6 +884,7 @@ public class GMLoaderProgram
             case "findprepend":
                 if (string.IsNullOrEmpty(find))
                 {
+                    exceptionCount++;
                     Log.Error($"Find pattern is empty for {scriptName}, skipping");
                     return;
                 }
@@ -885,12 +899,14 @@ public class GMLoaderProgram
             case "findreplaceregex":
                 if (string.IsNullOrEmpty(find))
                 {
+                    exceptionCount++;
                     Log.Error($"Regex pattern is empty for {scriptName}, skipping");
                     return;
                 }
                 importGroup.QueueRegexFindReplace(scriptName, find, code, caseSensitive);
                 break;
             default:
+                exceptionCount++;
                 Log.Error($"Unknown patch type '{type}' for {scriptName}, skipping");
                 break;
         }
@@ -1187,6 +1203,7 @@ public class GMLoaderProgram
     {
         if (!Directory.Exists(path))
         {
+            exceptionCount++;
             Log.Error($"{path} doesn't exists");
             return;
         }
@@ -1209,14 +1226,17 @@ public class GMLoaderProgram
         }
         catch (UnauthorizedAccessException ex)
         {
+            exceptionCount++;
             Log.Error($"Access denied: {ex.Message}");
         }
         catch (DirectoryNotFoundException ex)
         {
+            exceptionCount++;
             Log.Error($"Directory not found: {ex.Message}");
         }
         catch (IOException ex)
         {
+            exceptionCount++;
             Log.Error($"IO error: {ex.Message}");
         }
     }
@@ -1322,14 +1342,12 @@ public class GMLoaderProgram
             return;
         }
             
-
         if (code.ParentEntry is not null)
         {
             Log.Error($"// This code entry is a reference to an anonymous function within \"{code.ParentEntry.Name.Content}\", decompile that instead.");
             return;
         }
              
-
         GlobalDecompileContext globalDecompileContext = context is null ? new(Data) : context;
 
         try
@@ -2013,6 +2031,7 @@ public class GMLoaderProgram
         }
         catch (Exception exc)
         {
+            exceptionCount++;
             // rethrow as otherwise this will get interpreted as success
             Log.Error(exc.Message);
             throw;
@@ -2036,6 +2055,7 @@ public class GMLoaderProgram
         }
         catch (Exception exc)
         {
+            exceptionCount++;
             ScriptExecutionSuccess = false;
             ScriptErrorMessage = exc.ToString();
             //ScriptErrorType = "Exception";
@@ -2050,6 +2070,7 @@ public class GMLoaderProgram
         }
         else
         {
+            exceptionCount++;
             Log.Error(ScriptErrorMessage);
         }
     }
