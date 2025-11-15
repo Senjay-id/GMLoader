@@ -917,6 +917,7 @@ public class GMLoaderProgram
         }
         catch (Exception e)
         {
+            exceptionCount++;            
             // Get the modification history for this script
             string history = modificationHistory.ContainsKey(scriptName)
                 ? string.Join(", ", modificationHistory[scriptName])
@@ -2109,3 +2110,4 @@ public class GMLoaderProgram
     #endregion
 
 }
+
