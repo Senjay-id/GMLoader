@@ -8,36 +8,29 @@ if (directories.Length == 0)
     return;
 }
 
+var shadersToModify = Directory.GetDirectories(shaderPath).Select(x => Path.GetFileName(x));
 List<string> shadersExisting = new List<string>();
 List<string> shadersNonExist = new List<string>();
 List<string> currentList = new List<string>();
-
-var shadersToModify = Directory.GetDirectories(shaderPath).Select(x => Path.GetFileName(x));
-
 string res = "";
 
-foreach (string directory in directories)
+foreach (string shaderName in shadersToModify)
 {
-    Log.Information($"Importing Shader {Path.GetRelativePath(shaderPath, directory)}");
-
-    foreach (string shaderName in shadersToModify)
+    currentList.Clear();
+    for (int j = 0; j < Data.Shaders.Count; j++)
     {
-        currentList.Clear();
-        for (int j = 0; j < Data.Shaders.Count; j++)
-        {
-            string x = Data.Shaders[j].Name.Content;
-            res += (x + "\n");
-            currentList.Add(x);
-        }
-        if (Data.Shaders.ByName(shaderName) != null)
-        {
-            Data.Shaders.Remove(Data.Shaders.ByName(shaderName));
-            AddShader(shaderName);
-            Reorganize<UndertaleShader>(Data.Shaders, currentList);
-        }
-        else
-            AddShader(shaderName);
+        string x = Data.Shaders[j].Name.Content;
+        res += (x + "\n");
+        currentList.Add(x);
     }
+    if (Data.Shaders.ByName(shaderName) != null)
+    {
+        Data.Shaders.Remove(Data.Shaders.ByName(shaderName));
+        AddShader(shaderName);
+        Reorganize<UndertaleShader>(Data.Shaders, currentList);
+    }
+    else
+        AddShader(shaderName);
 }
 
 void ImportShader(UndertaleShader existing_shader)
@@ -251,8 +244,9 @@ void AddShader(string shader_name)
         string line;
         // Read the file and display it line by line.
         StreamReader file = new StreamReader(localImportDir + "VertexShaderAttributes.txt");
-        while ((line = file.ReadLine()) != null)
+        while((line = file.ReadLine()) != null)
         {
+            line = line.Trim();
             if (line != "")
             {
                 UndertaleShader.VertexShaderAttribute vertex_x = new UndertaleShader.VertexShaderAttribute();
@@ -285,8 +279,7 @@ void Reorganize<T>(IList<T> list, List<string> order) where T : UndertaleNamedRe
         try
         {
             asset = temp[order[i]];
-        }
-        catch (Exception e)
+        } catch (Exception e)
         {
             throw new ScriptException("Missing asset with name \"" + order[i] + "\"");
         }

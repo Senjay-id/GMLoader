@@ -1,6 +1,7 @@
-string vanillaSoundBankDir = "sound\\Desktop";
-string xdeltaSoundBankDir = "mods\\xdelta";
+string vanillaSoundBankDir = "sound/Desktop";
+string xdeltaSoundBankDir = "mods/xdelta";
 
+Directory.CreateDirectory(vanillaSoundBankDir);
 Directory.CreateDirectory(xdeltaSoundBankDir);
 
 List<string> fileList = new List<string>
@@ -18,7 +19,7 @@ string[] xdeltaFiles = Directory.GetFiles(xdeltaSoundBankDir, "*.xdelta");
 
 if (xdeltaFiles.Length == 0)
 {
-    Log.Debug("The xdelta import folder is empty, skipping the process");
+    Log.Debug($"The xdelta import folder is empty at {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, xdeltaSoundBankDir))}, skipping the process");
     return;
 }
 

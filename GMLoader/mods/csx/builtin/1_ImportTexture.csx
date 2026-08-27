@@ -255,7 +255,7 @@ try
                     if (isSubimages)
                     {
                         // the sprite is intended to be imported as subimages, only show debug.
-                        Log.Debug($"{spriteName} will be imported as subimage");
+                        Log.Debug($"{spriteName} will be imported using default .ini settings");
                         spriteName = Path.GetFileName(Path.GetDirectoryName(n.Texture.Source));
                     }
                     else if (spriteDictionary.TryGetValue(spriteName, out SpriteData spriteProps))
@@ -272,6 +272,7 @@ try
                         transparent = spriteProps.yml_transparent.Value;
                         smooth = spriteProps.yml_smooth.Value;
                         preload = spriteProps.yml_preload.Value;
+                        sepMaskType = spriteProps.yml_sepmask.Value;
                         //Log.Information($"{spriteName} x: {spriteProps.yml_x.Value} y: {spriteProps.yml_y.Value}");
                     }
                     else
@@ -342,6 +343,7 @@ try
 
                     if (isSubimages)
                     {
+                        int textureCount = sprite.Textures.Count;
                         frame = ExtractSecondToLastNumber(stripped) ?? 0;
                     }
                     else if (frame > sprite.Textures.Count - 1)
@@ -360,29 +362,26 @@ try
 
                     sprite.Textures[frame] = texentry;
 
-                    if (!isSubimages)
+                    sprite.OriginX = xCoordinate;
+                    sprite.OriginY = yCoordinate;
+                    sprite.BBoxMode = boundingBoxType;
+
+                    if (boundingBoxType == 2)
                     {
-                        sprite.OriginX = xCoordinate;
-                        sprite.OriginY = yCoordinate;
-                        sprite.BBoxMode = boundingBoxType;
-
-                        if (boundingBoxType == 2)
-                        {
-                            sprite.MarginLeft = leftCollision;
-                            sprite.MarginRight = rightCollision;
-                            sprite.MarginTop = topCollision;
-                            sprite.MarginBottom = bottomCollision;
-                        }
-
-                        sprite.GMS2PlaybackSpeedType = (AnimSpeedType)speedType;
-                        sprite.GMS2PlaybackSpeed = frameSpeed;
-                        sprite.IsSpecialType = isSpecial;
-                        sprite.SVersion = specialVer;
-                        sprite.SepMasks = (UndertaleSprite.SepMaskType)sepMaskType;
-                        sprite.Transparent = transparent;
-                        sprite.Smooth = smooth;
-                        sprite.Preload = preload;
+                        sprite.MarginLeft = leftCollision;
+                        sprite.MarginRight = rightCollision;
+                        sprite.MarginTop = topCollision;
+                        sprite.MarginBottom = bottomCollision;
                     }
+
+                    sprite.GMS2PlaybackSpeedType = (AnimSpeedType)speedType;
+                    sprite.GMS2PlaybackSpeed = frameSpeed;
+                    sprite.IsSpecialType = isSpecial;
+                    sprite.SVersion = specialVer;
+                    sprite.SepMasks = (UndertaleSprite.SepMaskType)sepMaskType;
+                    sprite.Transparent = transparent;
+                    sprite.Smooth = smooth;
+                    sprite.Preload = preload;
 
                     // Update sprite dimensions
                     uint oldWidth = sprite.Width, oldHeight = sprite.Height;
@@ -752,12 +751,14 @@ public class Packer
 
                     if (frames <= 0)
                     {
+                        exceptionCount++;
                         Log.Error(fullName + " has 0 frames.");
                         throw new Exception();
                     }
 
                     if (!isSprite && frames > 1)
                     {
+                        exceptionCount++;
                         Log.Error(fullName + " is not a sprite, but has more than 1 frame.");
                         throw new Exception();
                     }
@@ -812,6 +813,7 @@ public class Packer
 
             if (!Sources.Add(fullName))
             {
+                exceptionCount++;
                 Log.Error(
                     Path.GetFileNameWithoutExtension(fullName) +
                     " as a frame already exists (possibly due to having multiple types of sprite images named the same). Script has been stopped."
@@ -1074,6 +1076,7 @@ void CheckDuplicates()
         // Check for duplicate filenames in the cached file set
         if (fileSet.Count(f => f == FileNameWithExtension) > 1)
         {
+            exceptionCount++;
             Log.Error($"\nDuplicate file detected. There are multiple files named: {FileNameWithExtension}\n");
         }
     }

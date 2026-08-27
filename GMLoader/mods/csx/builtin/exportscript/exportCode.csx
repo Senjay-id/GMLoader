@@ -2,7 +2,7 @@ string codeFolder = exportCodeOutputPath;
 Directory.CreateDirectory(codeFolder);
 
 var globalDecompileContext = new GlobalDecompileContext(Data);
-var decompilerSettings = Data.ToolInfo.DecompilerSettings;
+var decompilerSettings = defaultDecompSettings;
 List<UndertaleCode> toDump = Data.Code.Where(c => c.ParentEntry is null).ToList();
 
 int coreCount = CalculateOptimalCoreCount();

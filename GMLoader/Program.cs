@@ -1,4 +1,4 @@
-#region Using Directives
+﻿#region Using Directives
 using Config.Net;
 using ImageMagick;
 using Microsoft.CodeAnalysis;
@@ -40,9 +40,11 @@ namespace GMLoader;
 public interface IConfig
 {
     public bool AutoGameStart { get; }
+    public bool AutoDeleteBackup { get; }
     public bool CheckHash { get; }
     public bool ConvertMode { get; }
     public bool ReuseVanillaExport { get; }
+    public bool ProcessIsolatedMods { get; }
     public string ConvertOutputPath { get; }
     public string ExportDataPath { get; }
     public string ExportOutputPath { get; }
@@ -84,6 +86,7 @@ public interface IConfig
     public string BackupData { get; }
     public string GameData { get; }
     public string ModsDirectory { get; }
+    public string IsolatedModsDirectory { get; }
     public string TexturesDirectory { get; }
     public string BackgroundTextureDirectory { get; }
     public string NoStripTexturesDirectory { get; }
@@ -146,6 +149,39 @@ public interface IConfig
     public int DefaultAudioGroupIndex { get; }
     public int DefaultAudioFileID { get; }
     public bool DefaultAudioPreload { get; }
+}
+
+public class ModMetadata
+{
+    [JsonProperty("modid")]
+    public string ModId { get; set; }
+
+    [JsonProperty("mod_name")]
+    public string ModName { get; set; }
+
+    [JsonProperty("version")]
+    public string Version { get; set; }
+
+    [JsonProperty("author")]
+    public string Author { get; set; }
+
+    [JsonProperty("description")]
+    public string Description { get; set; }
+
+    [JsonProperty("supported_game_version")]
+    public string SupportedGameVersion { get; set; }
+
+    [JsonProperty("supported_gmloader_version")]
+    public string SupportedGMLoaderVersion { get; set; }
+
+    [JsonProperty("depends")]
+    public Dictionary<string, string> Depends { get; set; }
+
+    [JsonProperty("auto_update_url")]
+    public string AutoUpdateUrl { get; set; }
+
+    [JsonProperty("homepage")]
+    public string Homepage { get; set; }
 }
 
 [YamlObject]
@@ -266,11 +302,14 @@ public partial class AudioData
 public class GMLoaderProgram
 {
     #region Properties
+    public static string gmloaderVersion { get; set; } = "";
     public static UndertaleData Data { get; set; }
     private static ScriptOptions CliScriptOptions { get; set; }
     public static string gameDataPath { get; set; }
     public static string gameName { get; set; }
     public static string modsPath { get; set; }
+    public static string isolatedModsPath { get; set; }
+    public static bool processIsolatedMods { get; set; }
     public static bool exportTexture { get; set; }
     public static bool exportGameObject { get; set; }
     public static bool exportCode { get; set; }
@@ -400,6 +439,8 @@ public class GMLoaderProgram
     public static List<string> audioList = new List<string>();
     public static string[] audioToImport;
     public static Dictionary<string, AudioData> audioDictionary = new Dictionary<string, AudioData>();
+    public static List<string> modFolderList = new List<string>();
+    public static Dictionary<string, ModMetadata> modsMetadata = new Dictionary<string, ModMetadata>();
 
     #endregion
 
@@ -408,6 +449,10 @@ public class GMLoaderProgram
         try
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
+
+            gmloaderVersion = Assembly.GetEntryAssembly()?
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion;
 
             string baseDir = AppContext.BaseDirectory;
             string logFile = Path.Combine(baseDir, "GMLoader.log");
@@ -423,7 +468,7 @@ public class GMLoaderProgram
                 .CreateLogger();
 
             Console.Title = "GMLoader";
-
+            //Log.Information($"Running GMLoader {gmloaderVersion}\n");
             if (!File.Exists(configFile))
             {
                 Log.Information($"Missing GMLoader.ini while trying to find it on {logFile}\n\n\nPress any key to close...");
@@ -439,8 +484,10 @@ public class GMLoaderProgram
             //Variables that doesn't have a type can be accessed by CSX scripts.
             ulong currentHash = 0;
             bool autoGameStart = config.AutoGameStart;
+            bool autoDeleteBackup = config.AutoDeleteBackup;
             bool checkHash = config.CheckHash;
             bool convertMode = config.ConvertMode;
+            bool processIsolatedMods = config.ProcessIsolatedMods;
             reuseVanillaExport = config.ReuseVanillaExport;
             convertOutputPath = config.ConvertOutputPath;
             exportCode = config.ExportCode;
@@ -488,6 +535,7 @@ public class GMLoaderProgram
             string backupDataPath = config.BackupData;
             gameDataPath = config.GameData;
             modsPath = config.ModsDirectory;
+            isolatedModsPath = config.IsolatedModsDirectory;
             texturesPath = config.TexturesDirectory;
             backgroundsTexturePath = config.BackgroundTextureDirectory;
             noStripTexturesPath = config.NoStripTexturesDirectory;
@@ -617,15 +665,18 @@ public class GMLoaderProgram
                 Environment.Exit(0);
             }
 
+            Log.Debug($"Supported hash: {supportedDataHash}");
+
             if (!File.Exists(backupDataPath))
             {
                 if (File.Exists(gameDataPath))
                 {
-                    ulong dataHash = ComputeFileHash3(gameDataPath);
+                    ulong dataHash = ComputeFileHash64(gameDataPath);
+                    Log.Debug($"Computed hash for {gameDataPath}: {dataHash}");
 
                     if (dataHash != supportedDataHash && checkHash)
                     {
-                        Console.WriteLine($"\nError, game data hash is not equal to the supportedDataHash, if your game is modded previously just reinstall or verify the game.\nOtherwise the modloader hash data is outdated and you need to wait for the update.\n\nIf your using MO2, check the overwrite folder and delete {gameDataPath} if it exists");
+                        Console.WriteLine($"Error, game data hash mismatch.\nThe modloader hash data are potentially outdated and you need to wait for the update.\n\nIf your using Mod Organizer 2, check the overwrite folder and delete {gameDataPath} if it exists.\n\n\nPress any key to close...");
                         Console.ReadKey();
                         Environment.Exit(0);
                     }
@@ -633,29 +684,30 @@ public class GMLoaderProgram
                     {
                         File.Copy(gameDataPath, backupDataPath);
                         Log.Information($"Backup of the data has been created at {Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, backupDataPath))}");
-                        currentHash = ComputeFileHash3(backupDataPath);
+                        currentHash = ComputeFileHash64(backupDataPath);
                     }
                     else
                     {
-                        currentHash = ComputeFileHash3(gameDataPath);
+                        currentHash = ComputeFileHash64(gameDataPath);
                     }
                 }
                 else
                 {
-                    Log.Error($"Error, Missing {gameDataPath}");
+                    Log.Error($"Error, Missing {gameDataPath}, make sure to extract GMLoader on the game folder.\n\n\nPress any key to close...");
                     Console.ReadKey();
                     Environment.Exit(0);
                 }
             }
             else
             {
-                currentHash = ComputeFileHash3(backupDataPath);
+                currentHash = ComputeFileHash64(backupDataPath);
             }
 
             Data = new UndertaleData();
 
             if (File.Exists(backupDataPath) && supportedDataHash == currentHash)
             {
+                Log.Debug($"Computed hash for {backupDataPath}: {currentHash}");
                 Log.Information($"Reading game data from {Path.GetFileName(backupDataPath)}");
                 using (var stream = new FileStream(backupDataPath, FileMode.Open, FileAccess.ReadWrite))
                 {
@@ -665,12 +717,16 @@ public class GMLoaderProgram
             }
             else if (File.Exists(backupDataPath) && supportedDataHash != currentHash && checkHash)
             {
-                Log.Information($"\nError, Game Data Hash Mismatch.\nThis happens because modloader is outdated or the {gameDataPath} is modified.\n\nDelete {backupDataPath} and reinstall or verify the integrity of game.\n\nIf your using MO2, check the overwrite folder and delete {backupDataPath}\n\n\nPress any key to close...");
+                Log.Debug($"Computed hash for {backupDataPath}: {currentHash}");
+                Log.Information($"\nError, game data hash mismatch.\nThis happens because modloader is outdated or the {gameDataPath} is modified.\n\nDelete {backupDataPath} if it exists and reinstall or verify the integrity of game.\n\nIf your using Mod Organizer 2, check the overwrite folder and delete {backupDataPath} if it exists.\n\n\nPress any key to close...");               
+                if (autoDeleteBackup)
+                    File.Delete(backupDataPath);
                 Console.ReadKey();
                 Environment.Exit(0);
             }
             else
             {
+                Log.Debug($"Computed hash for {backupDataPath}: {currentHash}");
                 // This should only happen if checkHash is false and backup.win doesn't exists
                 Log.Warning($"Warning, checkHash is false, make sure that you know what your doing. Reading game data from {gameDataPath}");
                 using (var stream = new FileStream(gameDataPath, FileMode.Open, FileAccess.ReadWrite))
@@ -714,6 +770,14 @@ public class GMLoaderProgram
             }
 
             processCSXScripts(dirPreCSXFiles, dirBuiltInCSXFiles, dirPostCSXFiles, dirAfterCSXFiles);
+
+            //if (processIsolatedMods)
+            //{
+            //    Log.Information("Processing isolated mods...");
+            //    string[] modFolders = Directory.GetDirectories(isolatedModsPath);
+            //    parseMetaData(modFolders);
+            //    parseIsolatedMods();
+            //}
 
             Log.Information("Recompiling the data...");
             using (var stream = new FileStream(gameDataPath, FileMode.Create, FileAccess.ReadWrite))
@@ -772,10 +836,10 @@ public class GMLoaderProgram
             }
             else
             {
-                Log.Information($"Game Data has been recompiled, you can now launch the modded data through the game executable.\n\nElapsed time: {stopwatch.Elapsed.TotalSeconds:F2} seconds ({stopwatch.ElapsedMilliseconds} ms)");
+                Log.Information($"Game Data has been recompiled, you can now launch the modded data through the game executable.\n\nElapsed time: {stopwatch.Elapsed.TotalSeconds:F2} seconds ({stopwatch.ElapsedMilliseconds} ms)\n\n");
                 if (exceptionCount > 0)
-                    Log.Warning($"\n\nWarning, {exceptionCount} exception has occured while patching the game. Please check the log.");
-                Log.Information("\n\nPress any key to close...");
+                    Log.Warning($"Warning, {exceptionCount} exception has occured while patching the game. Please check the log.\n\n");
+                Log.Information("Press any key to close...");
                 Console.ReadKey();
                 Environment.Exit(0);
             }
@@ -786,6 +850,164 @@ public class GMLoaderProgram
             Console.WriteLine("Press any key to close...");
             Console.ReadKey();
             Environment.Exit(0);
+        }
+    }
+
+    public static void parseIsolatedMods()
+    {
+        foreach (string modFolders in  modFolderList)
+        {
+            string modPath = Path.Combine(isolatedModsPath, modFolders);
+            //Dependency are already resolved so just process as usual
+
+            //check the mod loader version first, then game version if applicable, then process the mod
+        }
+    }
+
+    public static void parseMetaData(string[] modFolders)
+    {
+        modsMetadata.Clear();
+        modFolderList.Clear();
+
+        foreach (string folder in modFolders)
+        {
+            string metadataPath = Path.Combine(folder, "metadata.json");
+            try
+            {
+                if (File.Exists(metadataPath))
+                {
+                    string json = File.ReadAllText(metadataPath);
+                    ModMetadata metadata = JsonConvert.DeserializeObject<ModMetadata>(json);
+
+                    if (metadata == null || string.IsNullOrEmpty(metadata.ModId))
+                    {
+                        Log.Warning($"Warning: Invalid or missing mod ID in {metadataPath}. Skipping...");
+                        continue;
+                    }
+
+                    // Check for duplicate modIDs
+                    if (modsMetadata.Any(x => x.Value.ModId == metadata.ModId))
+                    {
+                        Log.Warning($"Warning: Duplicate mod ID '{metadata.ModId}' found in {metadataPath}. Skipping...");
+                        continue;
+                    }
+
+                    modsMetadata[folder] = metadata;
+                    modFolderList.Add(folder);
+                }
+                else
+                {
+                    Log.Warning($"Warning: No metadata found in {metadataPath}. Skipping...");
+                }
+            }
+            catch (Exception e)
+            {
+                exceptionCount++;
+                Log.Error($"Failed to process the mod folder at {folder}, skipping...\nException: {e}");
+                continue;
+            }
+        }
+
+        // Dependency resolution
+        resolveDependency();
+    }
+
+    private static void resolveDependency()
+    {
+        // Create a list to store folders that need to be removed
+        List<string> foldersToRemove = new List<string>();
+
+        // Get all available mod IDs from the loaded metadata
+        HashSet<string> availableModIds = new HashSet<string>(
+            modsMetadata.Values
+                .Where(m => m != null && !string.IsNullOrEmpty(m.ModId))
+                .Select(m => m.ModId)
+        );
+
+        // Check each mod's dependencies
+        foreach (var kvp in modsMetadata)
+        {
+            string folder = kvp.Key;
+            ModMetadata metadata = kvp.Value;
+
+            // Skip if metadata is null or has no dependencies
+            if (metadata == null || metadata.Depends == null || metadata.Depends.Count == 0)
+            {
+                continue;
+            }
+
+            // Check each dependency
+            bool missingDependency = false;
+            List<string> missingDeps = new List<string>();
+
+            foreach (var dependency in metadata.Depends)
+            {
+                string dependencyId = dependency.Key;
+                string requiredVersion = dependency.Value;
+
+                // Check if the dependency mod exists
+                if (!availableModIds.Contains(dependencyId))
+                {
+                    missingDependency = true;
+                    missingDeps.Add($"{dependencyId} (version {requiredVersion})");
+                }
+                else
+                {
+                    // Optional: Also check version compatibility if needed
+                    // You would need to get the dependency's metadata and compare versions
+                    // This part is optional and depends on your version checking logic
+                    var dependencyMetadata = modsMetadata.Values
+                        .FirstOrDefault(m => m.ModId == dependencyId);
+
+                    if (dependencyMetadata != null && !isVersionCompatible(requiredVersion, dependencyMetadata.Version))
+                    {
+                        missingDependency = true;
+                        missingDeps.Add($"{dependencyId} (requires {requiredVersion}, found {dependencyMetadata.Version})");
+                    }
+                }
+            }
+
+            // If missing dependencies, mark this mod for removal
+            if (missingDependency)
+            {
+                foldersToRemove.Add(folder);
+                Log.Warning($"Mod '{metadata.ModId}' missing dependencies: {string.Join(", ", missingDeps)}. Removing from load list.");
+            }
+        }
+
+        // Remove mods with missing dependencies
+        foreach (string folder in foldersToRemove)
+        {
+            // This isn't necessary but yeah
+            modsMetadata.Remove(folder);
+            
+            modFolderList.Remove(folder);
+        }
+
+        // Optional: Log the final list of loaded mods
+        Log.Information($"Successfully loaded {modsMetadata.Count} mods after dependency resolution:");
+        foreach (var kvp in modsMetadata)
+        {
+            Log.Information($"  - {kvp.Value.ModId} v{kvp.Value.Version} (from {kvp.Key})");
+        }
+    }
+
+    // Optional helper method for version checking
+    private static bool isVersionCompatible(string requiredVersion, string actualVersion)
+    {
+        if (string.IsNullOrEmpty(requiredVersion) || requiredVersion == "*")
+            return true;
+
+        // Add your version comparison logic here
+        // For example, using Semantic Versioning
+        try
+        {
+            // Simple string comparison - replace with proper version comparison
+            return actualVersion == requiredVersion;
+        }
+        catch
+        {
+            return false;
         }
     }
 
@@ -864,6 +1086,12 @@ public class GMLoaderProgram
                 importGroup.QueueFindReplace(scriptName, find, code, caseSensitive);
                 break;
             case "findreplacetrim":
+                if (string.IsNullOrEmpty(find))
+                {
+                    exceptionCount++;
+                    Log.Error($"Find pattern is empty for {scriptName}, skipping");
+                    return;
+                }
                 importGroup.QueueTrimmedLinesFindReplace(scriptName, find, code, caseSensitive);
                 break;
             case "append":
@@ -891,9 +1119,21 @@ public class GMLoaderProgram
                 importGroup.QueueFindReplace(scriptName, find, code + Environment.NewLine + find, caseSensitive);
                 break;
             case "findappendtrim":
+                if (string.IsNullOrEmpty(find))
+                {
+                    exceptionCount++;
+                    Log.Error($"Find pattern is empty for {scriptName}, skipping");
+                    return;
+                }
                 importGroup.QueueTrimmedLinesFindReplace(scriptName, find, find + Environment.NewLine + code, caseSensitive);
                 break;
             case "findprependtrim":
+                if (string.IsNullOrEmpty(find))
+                {
+                    exceptionCount++;
+                    Log.Error($"Find pattern is empty for {scriptName}, skipping");
+                    return;
+                }
                 importGroup.QueueTrimmedLinesFindReplace(scriptName, find, code + Environment.NewLine + find, caseSensitive);
                 break;
             case "findreplaceregex":
@@ -917,7 +1157,7 @@ public class GMLoaderProgram
         }
         catch (Exception e)
         {
-            exceptionCount++;            
+            exceptionCount++;
             // Get the modification history for this script
             string history = modificationHistory.ContainsKey(scriptName)
                 ? string.Join(", ", modificationHistory[scriptName])
@@ -1275,7 +1515,7 @@ public class GMLoaderProgram
         using (var stream = File.OpenRead(filePath))
         {
             byte[] fileBytes = new byte[stream.Length];
-            stream.Read(fileBytes, 0, (int)stream.Length);
+            stream.ReadExactly(fileBytes, 0, (int)stream.Length);
             return xxHash3.ComputeHash(fileBytes, (int)stream.Length, 0);
         }
     }
@@ -1692,8 +1932,8 @@ public class GMLoaderProgram
 
             if (vanillaFileNames.TryGetValue(moddedFilename, out string vanillaFile))
             {
-                ulong vanillaHash = ComputeFileHash3(vanillaFile);
-                ulong modHash = ComputeFileHash3(moddedFile);
+                ulong vanillaHash = ComputeFileHash64(vanillaFile);
+                ulong modHash = ComputeFileHash64(moddedFile);
 
                 // Compare the files
                 if (vanillaHash != modHash)
@@ -2110,4 +2350,3 @@ public class GMLoaderProgram
     #endregion
 
 }
-

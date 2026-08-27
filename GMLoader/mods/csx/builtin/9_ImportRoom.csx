@@ -1,5 +1,6 @@
 // Written by SolventMercury
 // Edited by Senjay for GMLoader
+// Edited by Phil with assistance from Claude Opus 4.5
 
 string[] dirFiles = Directory.GetFiles(roomPath, "*.json");
 
@@ -16,6 +17,10 @@ else if (!dirFiles.Any(x => x.EndsWith(".json")))
 
 UndertaleRoom newRoom = new UndertaleRoom();
 
+// Track the highest instance IDs we encounter during import
+uint maxObjectInstanceId = Data.GeneralInfo.LastObj;
+uint maxTileInstanceId = Data.GeneralInfo.LastTile;
+
 await Task.Run(() =>
 {
     foreach (string file in dirFiles)
@@ -24,6 +29,16 @@ await Task.Run(() =>
         ReadRoom(file);
     }
 });
+
+// Update LastObj and LastTile to prevent runtime ID collisions
+if (maxObjectInstanceId >= Data.GeneralInfo.LastObj) {
+    Data.GeneralInfo.LastObj = maxObjectInstanceId + 1;
+    Log.Information($"Updated LastObj to {Data.GeneralInfo.LastObj}");
+}
+if (maxTileInstanceId >= Data.GeneralInfo.LastTile) {
+    Data.GeneralInfo.LastTile = maxTileInstanceId + 1;
+    Log.Information($"Updated LastTile to {Data.GeneralInfo.LastTile}");
+}
 
 void ReadRoom(string filePath)
 {
@@ -59,6 +74,19 @@ void ReadRoom(string filePath)
     if (Data.Rooms.ByName(newRoom.Name.Content) == null)
         Data.Rooms.Add(newRoom);
 
+}
+
+// Helper functions to track and update max instance IDs
+void TrackObjectInstanceId(uint instanceId)
+{
+    if (instanceId > maxObjectInstanceId)
+        maxObjectInstanceId = instanceId;
+}
+
+void TrackTileInstanceId(uint instanceId)
+{
+    if (instanceId > maxTileInstanceId)
+        maxTileInstanceId = instanceId;
 }
 
 void ReadMainValues(ref Utf8JsonReader reader)
@@ -227,6 +255,7 @@ void ReadGameObjects(ref Utf8JsonReader reader)
             string objDefName = ReadString(ref reader);
 
             newObj.InstanceID = (uint) ReadNum(ref reader);
+            TrackObjectInstanceId(newObj.InstanceID);  // Track this ID
 
             string ccIdName = ReadString(ref reader);
 
@@ -279,6 +308,8 @@ void ReadTiles(ref Utf8JsonReader reader)
             newTile.Height = (uint) ReadNum(ref reader);
             newTile.TileDepth = (int) ReadNum(ref reader);
             newTile.InstanceID = (uint) ReadNum(ref reader);
+            TrackTileInstanceId(newTile.InstanceID);  // Track this ID
+
             newTile.ScaleX = ReadFloat(ref reader);
             newTile.ScaleY = ReadFloat(ref reader);
             newTile.Color = (uint) ReadNum(ref reader);
@@ -411,6 +442,7 @@ void ReadInstancesLayer(ref Utf8JsonReader reader, UndertaleRoom.Layer newLayer)
                 string objDefName = ReadString(ref reader);
 
                 newObj.InstanceID = (uint) ReadNum(ref reader);
+                TrackObjectInstanceId(newObj.InstanceID);  // Track this ID
 
                 string ccIdName = ReadString(ref reader);
 
@@ -461,6 +493,8 @@ void ReadAssetsLayer(ref Utf8JsonReader reader, UndertaleRoom.Layer newLayer)
     newLayerData.Sprites = new UndertalePointerList<UndertaleRoom.SpriteInstance>();
     newLayerData.Sequences = new UndertalePointerList<UndertaleRoom.SequenceInstance>();
     newLayerData.NineSlices = new UndertalePointerList<UndertaleRoom.SpriteInstance>();
+    newLayerData.ParticleSystems = new UndertalePointerList<UndertaleRoom.ParticleSystemInstance>();
+    newLayerData.TextItems = new UndertalePointerList<UndertaleRoom.TextItemInstance>();
 
     while (reader.Read())
     {
@@ -481,6 +515,8 @@ void ReadAssetsLayer(ref Utf8JsonReader reader, UndertaleRoom.Layer newLayer)
             newTile.Height = (uint) ReadNum(ref reader);
             newTile.TileDepth = (int) ReadNum(ref reader);
             newTile.InstanceID = (uint) ReadNum(ref reader);
+            TrackTileInstanceId(newTile.InstanceID);  // Track this ID
+
             newTile.ScaleX = ReadFloat(ref reader);
             newTile.ScaleY = ReadFloat(ref reader);
             newTile.Color = (uint) ReadNum(ref reader);
